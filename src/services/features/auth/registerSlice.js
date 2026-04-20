@@ -6,12 +6,17 @@ export const registerUser = createAsyncThunk(
   'register/registerUser',
   async (values, { rejectWithValue }) => {
     try {
-      // Web: no FCM token needed — omit it
-      const response = await API.post('/api/auth/register', values);
+      // Web platform: backend requires fcmToken field — send empty string
+      const payload = {
+        ...values,
+        fcmToken: '',
+      };
+      const response = await API.post('/api/auth/register', payload);
       return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message ||
+        error.response?.data?.error ||
         error.response?.data ||
         'Registration failed'
       );

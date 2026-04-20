@@ -8,6 +8,7 @@ import { Button, Input, Select, toast }        from '../../components/ui/UI';
 import locationData                            from '../../assets/json/Location.json';
 import './Auth.css';
 
+/* ─── Roles — exact same as mobile app ──────────────────────────────────────── */
 const ROLES = [
   { value: '',                   label: 'Select Role'           },
   { value: 'MarketingManager',   label: 'Marketing Manager'     },
@@ -18,6 +19,7 @@ const ROLES = [
   { value: 'Radnus',             label: 'Radnus'                },
 ];
 
+/* ─── Shared left brand panel ───────────────────────────────────────────────── */
 const AuthBrand = () => (
   <div className="auth-brand">
     <div>
@@ -48,19 +50,19 @@ const AuthBrand = () => (
 );
 
 /* ═══ REGISTER PAGE ══════════════════════════════════════════════════════════════
-   Fields: name, email, mobile, role, state, password, confirmPassword
-   Flow  : Form → Terms → API → OTP (mobile number)
+   Mirrors mobile RegisterScreen exactly:
+   name, email, mobile, password, confirmPassword, role, state, district, taluk
 ══════════════════════════════════════════════════════════════════════════════ */
 export const RegisterPage = () => {
   const dispatch    = useDispatch();
   const navigate    = useNavigate();
   const { loading } = useSelector(s => s.register);
 
-  const [step,     setStep]    = useState('form');
-  const [showPw,   setShowPw]  = useState(false);
-  const [accepted, setAccepted]= useState(false);
-  const [apiErr,   setApiErr]  = useState('');
-  const [errs,     setErrs]    = useState({});
+  const [step,     setStep]     = useState('form');
+  const [showPw,   setShowPw]   = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const [apiErr,   setApiErr]   = useState('');
+  const [errs,     setErrs]     = useState({});
 
   const [vals, setVals] = useState({
     name:            '',
@@ -70,24 +72,42 @@ export const RegisterPage = () => {
     confirmPassword: '',
     role:            '',
     state:           '',
+    district:        '',
+    taluk:           '',
   });
 
-  const states     = Object.keys(locationData || {});
-  const stateOpts  = [{ value:'', label:'Select State' }, ...states.map(s => ({ value:s, label:s }))];
+  /* ── Cascading location lists — same logic as mobile RegisterScreen ────────── */
+  const states    = Object.keys(locationData);
+  const districts = vals.state
+    ? Object.keys(locationData[vals.state] || {})
+    : [];
+  const taluks    = vals.state && vals.district
+    ? locationData[vals.state]?.[vals.district] || []
+    : [];
 
-  const set = (k, v) => {
-    setVals(p => ({ ...p, [k]: v }));
-    setErrs(p => ({ ...p, [k]: '' }));
+  const set = (key, value) => {
+    setVals(prev => ({
+      ...prev,
+      [key]: value,
+      // Reset children when parent changes — mirrors mobile behaviour
+      ...(key === 'state'    ? { district: '', taluk: '' } : {}),
+      ...(key === 'district' ? { taluk: ''               } : {}),
+    }));
+    setErrs(prev => ({ ...prev, [key]: '' }));
     setApiErr('');
   };
 
+  /* ── Validation — mirrors mobile Yup schema ──────────────────────────────── */
   const validate = () => {
     const e = {};
-    if (!vals.name.trim())                       e.name    = 'Name is required';
-    if (!/\S+@\S+\.\S+/.test(vals.email))       e.email   = 'Valid email is required';
-    if (!/^[6-9]\d{9}$/.test(vals.mobile))      e.mobile  = 'Valid 10-digit mobile required';
-    if (!vals.role)                              e.role    = 'Please select a role';
-    if (vals.password.length < 6)               e.password= 'Min 6 characters';
+    if (!vals.name.trim())                       e.name     = 'Name is required';
+    if (!/\S+@\S+\.\S+/.test(vals.email))       e.email    = 'Valid email is required';
+    if (!/^[6-9]\d{9}$/.test(vals.mobile))      e.mobile   = 'Valid 10-digit mobile required';
+    if (!vals.role)                              e.role     = 'Role is required';
+    if (!vals.state)                             e.state    = 'State is required';
+    if (!vals.district)                          e.district = 'District is required';
+    if (!vals.taluk)                             e.taluk    = 'Taluk is required';
+    if (vals.password.length < 6)               e.password = 'Min 6 characters';
     if (vals.password !== vals.confirmPassword)  e.confirmPassword = 'Passwords do not match';
     setErrs(e);
     return Object.keys(e).length === 0;
@@ -110,7 +130,12 @@ export const RegisterPage = () => {
     }
   };
 
-  /* Terms step */
+  /* Build option arrays */
+  const stateOpts    = [{ value: '', label: 'Select State'    }, ...states.map(s    => ({ value: s, label: s }))];
+  const districtOpts = [{ value: '', label: 'Select District' }, ...districts.map(d => ({ value: d, label: d }))];
+  const talukOpts    = [{ value: '', label: 'Select Taluk'    }, ...taluks.map(t    => ({ value: t, label: t }))];
+
+  /* ── Terms step ─────────────────────────────────────────────────────────── */
   if (step === 'terms') return (
     <div className="auth-root">
       <div className="auth-grid" />
@@ -122,11 +147,11 @@ export const RegisterPage = () => {
 
           <div className="terms-scroll">
             {[
-              ['Terms of Use',    'By using this application, you agree to comply with all company policies related to sales operations, stock handling, billing, and customer management.'],
-              ['Location Data',   'Location data may be captured during working hours to verify retailer visits and ensure accurate reporting. No tracking is performed outside working hours.'],
-              ['Misuse Policy',   'Any misuse of the application, data manipulation, or unauthorized access may lead to suspension or termination of access.'],
-              ['Policy Updates',  'The company reserves the right to update these terms at any time. Continued use implies acceptance of updated terms.'],
-              ['Disclaimer',      'If you do not agree with these terms, please do not proceed with registration.'],
+              ['Terms of Use',   'By using this application you agree to comply with all company policies related to sales operations, stock handling, billing, and customer management.'],
+              ['Location Data',  'Location data may be captured during working hours to verify retailer visits and ensure accurate reporting. No tracking is performed outside working hours.'],
+              ['Misuse Policy',  'Any misuse of the application, data manipulation, or unauthorized access may lead to suspension or termination of access.'],
+              ['Policy Updates', 'The company reserves the right to update these terms at any time. Continued use implies acceptance of updated terms.'],
+              ['Disclaimer',     'If you do not agree with these terms, please do not proceed with registration.'],
             ].map(([h, t]) => (
               <div key={h} className="terms-section">
                 <div className="terms-heading">{h}</div>
@@ -135,62 +160,161 @@ export const RegisterPage = () => {
             ))}
           </div>
 
-          <button className="terms-checkbox-row" type="button" onClick={() => { setAccepted(a => !a); setApiErr(''); }}>
-            {accepted ? <CheckSquare size={20} color="var(--red)" /> : <Square size={20} color="var(--text-muted)" />}
-            <span className="terms-checkbox-lbl">I have read and agree to the Terms &amp; Conditions</span>
+          <button
+            className="terms-checkbox-row"
+            type="button"
+            onClick={() => { setAccepted(a => !a); setApiErr(''); }}
+          >
+            {accepted
+              ? <CheckSquare size={20} color="var(--red)" />
+              : <Square      size={20} color="var(--text-muted)" />}
+            <span className="terms-checkbox-lbl">
+              I have read and agree to the Terms &amp; Conditions
+            </span>
           </button>
 
           {apiErr && <div className="auth-error"><span>⚠</span>{apiErr}</div>}
 
-          <div style={{ display:'flex', gap:10 }}>
-            <Button variant="ghost" size="lg" style={{ flex:1 }} onClick={() => { setStep('form'); setApiErr(''); }}>← Back</Button>
-            <Button variant="primary" size="lg" style={{ flex:2 }} loading={loading} disabled={!accepted} onClick={handleRegister}>Create Account</Button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button variant="ghost"   size="lg" style={{ flex: 1 }}
+              onClick={() => { setStep('form'); setApiErr(''); }}>
+              ← Back
+            </Button>
+            <Button variant="primary" size="lg" style={{ flex: 2 }}
+              loading={loading} disabled={!accepted}
+              onClick={handleRegister}>
+              Create Account
+            </Button>
           </div>
         </div>
       </div>
     </div>
   );
 
-  /* Register form */
+  /* ── Registration form ───────────────────────────────────────────────────── */
   return (
     <div className="auth-root">
       <div className="auth-grid" />
-      <div className="auth-panel">
+      <div className="auth-panel" style={{ width: 'min(1040px, 96vw)' }}>
         <AuthBrand />
-        <div className="auth-form-pane" style={{ overflowY:'auto' }}>
+        <div className="auth-form-pane" style={{ overflowY: 'auto' }}>
           <div className="auth-form-title">Create Account</div>
           <div className="auth-form-sub">Register your account to get started</div>
 
           <form className="auth-form" onSubmit={handleNext}>
+
+            {/* Row 1: Name + Mobile */}
             <div className="form-row">
-              <Input label="Full Name"     placeholder="Your full name"     value={vals.name}   onChange={e => set('name',   e.target.value)} error={errs.name}   autoComplete="name" />
-              <Input label="Mobile Number" type="tel" placeholder="10-digit mobile" value={vals.mobile} onChange={e => set('mobile', e.target.value)} error={errs.mobile} maxLength={10} />
+              <Input
+                label="Full Name"
+                placeholder="Enter your name"
+                value={vals.name}
+                onChange={e => set('name', e.target.value)}
+                error={errs.name}
+                autoComplete="name"
+              />
+              <Input
+                label="Mobile Number"
+                type="tel"
+                placeholder="Enter your mobile number"
+                value={vals.mobile}
+                onChange={e => set('mobile', e.target.value)}
+                error={errs.mobile}
+                maxLength={10}
+              />
             </div>
 
-            <Input label="Email ID" type="email" placeholder="you@example.com" value={vals.email} onChange={e => set('email', e.target.value)} error={errs.email} autoComplete="email" />
+            {/* Email */}
+            <Input
+              label="Email ID"
+              type="email"
+              placeholder="Enter your email ID"
+              value={vals.email}
+              onChange={e => set('email', e.target.value)}
+              error={errs.email}
+              autoComplete="email"
+            />
 
+            {/* Password row */}
             <div className="form-row">
-              <Select label="Role"  options={ROLES}     value={vals.role}  onChange={e => set('role',  e.target.value)} error={errs.role}  />
-              <Select label="State" options={stateOpts} value={vals.state} onChange={e => set('state', e.target.value)} error={errs.state} />
-            </div>
-
-            <div className="form-row">
-              <div style={{ position:'relative' }}>
-                <Input label="Password" type={showPw ? 'text' : 'password'} placeholder="Min 6 characters" value={vals.password} onChange={e => set('password', e.target.value)} error={errs.password} autoComplete="new-password" />
-                <button type="button" className="pw-toggle" style={{ bottom: errs.password ? 28 : 10, top:'auto', transform:'none' }} onClick={() => setShowPw(v => !v)}>
-                  {showPw ? <EyeOff size={15}/> : <Eye size={15}/>}
+              <div style={{ position: 'relative' }}>
+                <Input
+                  label="Password"
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="Enter your Password"
+                  value={vals.password}
+                  onChange={e => set('password', e.target.value)}
+                  error={errs.password}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className="pw-toggle"
+                  style={{ bottom: errs.password ? 28 : 10, top: 'auto', transform: 'none' }}
+                  onClick={() => setShowPw(v => !v)}
+                >
+                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
-              <Input label="Confirm Password" type="password" placeholder="Repeat password" value={vals.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} error={errs.confirmPassword} autoComplete="new-password" />
+              <Input
+                label="Confirm Password"
+                type="password"
+                placeholder="Enter your Confirm Password"
+                value={vals.confirmPassword}
+                onChange={e => set('confirmPassword', e.target.value)}
+                error={errs.confirmPassword}
+                autoComplete="new-password"
+              />
             </div>
+
+            {/* Role */}
+            <Select
+              label="Role"
+              options={ROLES}
+              value={vals.role}
+              onChange={e => set('role', e.target.value)}
+              error={errs.role}
+            />
+
+            {/* State */}
+            <Select
+              label="State"
+              options={stateOpts}
+              value={vals.state}
+              onChange={e => set('state', e.target.value)}
+              error={errs.state}
+            />
+
+            {/* District — enabled only when state selected */}
+            <Select
+              label="District"
+              options={districtOpts}
+              value={vals.district}
+              onChange={e => set('district', e.target.value)}
+              error={errs.district}
+              disabled={!vals.state}
+            />
+
+            {/* Taluk — enabled only when district selected */}
+            <Select
+              label="Taluk"
+              options={talukOpts}
+              value={vals.taluk}
+              onChange={e => set('taluk', e.target.value)}
+              error={errs.taluk}
+              disabled={!vals.district}
+            />
 
             {apiErr && <div className="auth-error"><span>⚠</span>{apiErr}</div>}
 
-            <Button type="submit" variant="primary" size="lg" fullWidth>Next — Review Terms</Button>
+            <Button type="submit" variant="primary" size="lg" fullWidth>
+              Next — Review Terms
+            </Button>
           </form>
 
           <div className="auth-form-footer">
-            Already have an account? <Link to="/login" className="auth-link">Sign in</Link>
+            Already have an account?{' '}
+            <Link to="/login" className="auth-link">Sign in</Link>
           </div>
         </div>
       </div>
@@ -198,9 +322,9 @@ export const RegisterPage = () => {
   );
 };
 
-/* ═══ OTP PAGE ════════════════════════════════════════════════════════════════════
-   register → verify with mobile  →  /api/auth/verify-otp        { mobile, otp }
-   reset    → verify with email   →  /api/auth/verify-reset-otp  { email,  otp }
+/* ═══ OTP PAGE ═══════════════════════════════════════════════════════════════════
+   register → verify with mobile  → /api/auth/verify-otp        { mobile, otp }
+   reset    → verify with email   → /api/auth/verify-reset-otp  { email,  otp }
 ══════════════════════════════════════════════════════════════════════════════ */
 const OTP_LENGTH = 6;
 const OTP_TIMER  = 45;
@@ -219,12 +343,14 @@ export const OtpPage = () => {
   const [apiErr,    setApiErr]    = useState('');
   const inputRefs = useRef([]);
 
+  /* Countdown */
   useEffect(() => {
     if (timer === 0) { setCanResend(true); return; }
     const id = setInterval(() => setTimer(t => t - 1), 1000);
     return () => clearInterval(id);
   }, [timer]);
 
+  /* Redirect on success */
   useEffect(() => {
     if (!verified) return;
     dispatch(resetOtpState());
@@ -236,6 +362,7 @@ export const OtpPage = () => {
     }
   }, [verified, verifiedType, email, otp, dispatch, navigate]);
 
+  /* Show error */
   useEffect(() => {
     if (error) {
       setApiErr(error);
@@ -252,7 +379,8 @@ export const OtpPage = () => {
   };
 
   const handleKeyDown = (idx, e) => {
-    if (e.key === 'Backspace' && !otp[idx] && idx > 0) inputRefs.current[idx - 1]?.focus();
+    if (e.key === 'Backspace' && !otp[idx] && idx > 0)
+      inputRefs.current[idx - 1]?.focus();
   };
 
   const handlePaste = (e) => {
@@ -286,6 +414,7 @@ export const OtpPage = () => {
     }
   };
 
+  /* Auto-submit when all 6 digits entered */
   useEffect(() => {
     if (otp.every(d => d !== '') && !loading) handleSubmit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -302,7 +431,9 @@ export const OtpPage = () => {
         <AuthBrand />
         <div className="auth-form-pane">
           <div className="auth-form-title">Verify OTP</div>
-          <div className="auth-form-sub">6-digit code sent to <strong>{maskedTarget}</strong></div>
+          <div className="auth-form-sub">
+            6-digit code sent to <strong>{maskedTarget}</strong>
+          </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="otp-row" onPaste={handlePaste}>
@@ -311,7 +442,8 @@ export const OtpPage = () => {
                   key={i}
                   ref={el => inputRefs.current[i] = el}
                   className={`otp-input ${digit ? 'otp-filled' : ''}`}
-                  maxLength={1} value={digit}
+                  maxLength={1}
+                  value={digit}
                   onChange={e => handleChange(i, e.target.value)}
                   onKeyDown={e => handleKeyDown(i, e)}
                   inputMode="numeric"
@@ -323,13 +455,15 @@ export const OtpPage = () => {
             <div className="otp-timer-row">
               {canResend
                 ? <button type="button" className="auth-link" onClick={handleResend} disabled={loading}>Resend OTP</button>
-                : <span style={{ color:'var(--text-muted)', fontSize:13 }}>Resend in <strong style={{ color:'var(--red)' }}>{timer}s</strong></span>
+                : <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>Resend in <strong style={{ color: 'var(--red)' }}>{timer}s</strong></span>
               }
             </div>
 
             {apiErr && <div className="auth-error"><span>⚠</span>{apiErr}</div>}
 
-            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>Verify OTP</Button>
+            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
+              Verify OTP
+            </Button>
           </form>
 
           <div className="auth-form-footer">
@@ -380,11 +514,21 @@ export const ForgotPasswordPage = () => {
           <div className="auth-form-title">Forgot Password</div>
           <div className="auth-form-sub">Enter your email and we'll send a reset OTP</div>
           <form className="auth-form" onSubmit={handleSubmit}>
-            <Input label="Email Address" type="email" placeholder="you@company.com" value={email} onChange={e => { setEmail(e.target.value); setErrMsg(''); setApiErr(''); }} error={errMsg} autoFocus />
+            <Input
+              label="Email Address" type="email" placeholder="you@company.com"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setErrMsg(''); setApiErr(''); }}
+              error={errMsg}
+              autoFocus
+            />
             {apiErr && <div className="auth-error"><span>⚠</span>{apiErr}</div>}
-            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>Send OTP</Button>
+            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
+              Send OTP
+            </Button>
           </form>
-          <div className="auth-form-footer"><Link to="/login" className="auth-link">← Back to login</Link></div>
+          <div className="auth-form-footer">
+            <Link to="/login" className="auth-link">← Back to login</Link>
+          </div>
         </div>
       </div>
     </div>
@@ -395,10 +539,11 @@ export const ForgotPasswordPage = () => {
    POST /api/auth/reset-password  { email, otp, password }
 ══════════════════════════════════════════════════════════════════════════════ */
 export const ResetPasswordPage = () => {
-  const navigate     = useNavigate();
-  const location     = useLocation();
+  const navigate       = useNavigate();
+  const location       = useLocation();
   const { email, otp } = location.state || {};
-  const [vals,    setVals]    = useState({ password:'', confirm:'' });
+
+  const [vals,    setVals]    = useState({ password: '', confirm: '' });
   const [errs,    setErrs]    = useState({});
   const [showPw,  setShowPw]  = useState(false);
   const [loading, setLoading] = useState(false);
@@ -432,15 +577,37 @@ export const ResetPasswordPage = () => {
           <div className="auth-form-title">Reset Password</div>
           <div className="auth-form-sub">Set a new password for <strong>{email}</strong></div>
           <form className="auth-form" onSubmit={handleSubmit}>
-            <div style={{ position:'relative' }}>
-              <Input label="New Password" type={showPw ? 'text' : 'password'} placeholder="Min 6 characters" value={vals.password} onChange={e => { setVals(p => ({...p,password:e.target.value})); setErrs(p=>({...p,password:''})); }} error={errs.password} autoFocus />
-              <button type="button" className="pw-toggle" style={{ bottom: errs.password ? 28 : 10, top:'auto', transform:'none' }} onClick={() => setShowPw(v=>!v)}>
-                {showPw ? <EyeOff size={15}/> : <Eye size={15}/>}
+            <div style={{ position: 'relative' }}>
+              <Input
+                label="New Password"
+                type={showPw ? 'text' : 'password'}
+                placeholder="Min 6 characters"
+                value={vals.password}
+                onChange={e => { setVals(p => ({ ...p, password: e.target.value })); setErrs(p => ({ ...p, password: '' })); }}
+                error={errs.password}
+                autoFocus
+              />
+              <button
+                type="button"
+                className="pw-toggle"
+                style={{ bottom: errs.password ? 28 : 10, top: 'auto', transform: 'none' }}
+                onClick={() => setShowPw(v => !v)}
+              >
+                {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            <Input label="Confirm Password" type="password" placeholder="Repeat new password" value={vals.confirm} onChange={e => { setVals(p=>({...p,confirm:e.target.value})); setErrs(p=>({...p,confirm:''})); }} error={errs.confirm} />
+            <Input
+              label="Confirm Password"
+              type="password"
+              placeholder="Repeat new password"
+              value={vals.confirm}
+              onChange={e => { setVals(p => ({ ...p, confirm: e.target.value })); setErrs(p => ({ ...p, confirm: '' })); }}
+              error={errs.confirm}
+            />
             {apiErr && <div className="auth-error"><span>⚠</span>{apiErr}</div>}
-            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>Reset Password</Button>
+            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
+              Reset Password
+            </Button>
           </form>
         </div>
       </div>
