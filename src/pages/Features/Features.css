@@ -1,0 +1,34 @@
+/* ─── Territory ──────────────────────────────────────────────────────────────── */
+.territory-node {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+}
+.territory-header {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  cursor: pointer; transition: var(--transition);
+}
+.territory-header:hover { background: var(--bg-card-hover); }
+.territory-state { font-weight: 700; font-size: 14px; flex: 1; }
+.territory-body  { padding: 16px; border-top: 1px solid var(--border-subtle); background: var(--bg-surface); }
+
+.district-group { margin-bottom: 14px; }
+.district-name  { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.taluk-pills    { display: flex; flex-wrap: wrap; gap: 6px; }
+.taluk-pill     { background: var(--bg-card); border: 1px solid var(--border); border-radius: 99px; padding: 4px 10px; font-size: 12px; color: var(--text-secondary); cursor: default; transition: var(--transition); }
+.taluk-pill:hover { border-color: var(--red); color: var(--red); }
+
+/* ─── FSE Grid ───────────────────────────────────────────────────────────────── */
+.fse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.fse-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; transition: var(--transition);
+}
+.fse-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); border-color: rgba(220,38,38,0.2); }
+.fse-card-head  { display: flex; align-items: center; gap: 12px; padding: 16px; }
+.fse-info       { flex: 1; min-width: 0; }
+.fse-name       { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fse-territory  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.fse-status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.fse-card-footer { padding: 12px 16px; border-top: 1px solid var(--border-subtle); display: flex; gap: 8px; background: var(--bg-surface); }
+.fse-stat       { flex: 1; text-align: center; }
+.fse-stat-lbl   { display: block; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
