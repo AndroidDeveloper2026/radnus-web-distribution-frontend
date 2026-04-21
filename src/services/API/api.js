@@ -7,7 +7,7 @@ import {
 } from '../AuthStorage/authStorage';
 
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'https://radnus-android-distribution-backend-210s.onrender.com',
+  baseURL: process.env.REACT_APP_API_BASE_URL || '..',
   timeout: 30000,
 });
 
