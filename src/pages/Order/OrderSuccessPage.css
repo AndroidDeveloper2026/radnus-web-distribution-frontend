@@ -1,14 +1,10 @@
-/* OrderSuccessPage.css */
+/* OrderSuccessPage.css — uses global theme vars from index.css */
 .order-success-page {
   padding: 2rem;
   min-height: 100vh;
-  background: #f5f7fa;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-}
-
-.order-success-page.dark {
-  background: #111827;
-  color: #e5e7eb;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
 }
 
 .order-success-container {
@@ -20,28 +16,18 @@
   font-size: 1.8rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
-  color: #1f2937;
-  border-left: 4px solid #d32f2f;
+  color: var(--text-primary);
+  border-left: 4px solid var(--red);
   padding-left: 1rem;
 }
 
-.order-success-page.dark .success-header {
-  color: #f3f4f6;
-}
-
 .form-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-card);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  border: 1px solid #e5e7eb;
-}
-
-.order-success-page.dark .form-card {
-  background: #1f2937;
-  border-color: #374151;
-  box-shadow: none;
+  border: 1px solid var(--border);
 }
 
 .form-card h3 {
@@ -50,11 +36,8 @@
   margin-top: 0;
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.order-success-page.dark .form-card h3 {
-  border-bottom-color: #374151;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-primary);
 }
 
 .field-group {
@@ -69,11 +52,7 @@
   font-size: 0.85rem;
   font-weight: 500;
   margin-bottom: 0.4rem;
-  color: #4b5563;
-}
-
-.order-success-page.dark .field-group label {
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 .field-input,
@@ -81,37 +60,30 @@
 .custom-select {
   width: 100%;
   padding: 0.6rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   font-size: 0.9rem;
-  background: white;
+  background: var(--bg-input);
+  color: var(--text-primary);
   transition: border 0.2s;
-}
-
-.order-success-page.dark .field-input,
-.order-success-page.dark .readonly-field,
-.order-success-page.dark .custom-select {
-  background: #374151;
-  border-color: #4b5563;
-  color: #f3f4f6;
+  font-family: var(--font-body);
 }
 
 .field-input:focus,
 .custom-select:focus {
   outline: none;
-  border-color: #d32f2f;
-  box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2);
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px var(--red-glow);
+}
+
+.field-input::placeholder {
+  color: var(--text-muted);
 }
 
 .readonly-field {
-  background: #f9fafb;
-  color: #1f2937;
+  background: var(--bg-surface);
   cursor: default;
-}
-
-.order-success-page.dark .readonly-field {
-  background: #2d3748;
-  color: #f3f4f6;
+  color: var(--text-secondary);
 }
 
 .custom-select {
@@ -119,35 +91,29 @@
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  background: white;
 }
 
 .dropdown-arrow {
   transition: transform 0.2s;
+  color: var(--text-muted);
 }
 
 .dropdown-arrow.open {
   transform: rotate(180deg);
 }
 
-/* Dropdown list */
 .dropdown-list {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #d1d5db;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   max-height: 200px;
   overflow-y: auto;
   z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.order-success-page.dark .dropdown-list {
-  background: #1f2937;
-  border-color: #4b5563;
+  box-shadow: var(--shadow-lg);
 }
 
 .dropdown-item {
@@ -155,18 +121,15 @@
   cursor: pointer;
   font-size: 0.9rem;
   transition: background 0.1s;
+  color: var(--text-primary);
 }
 
 .dropdown-item:hover {
-  background: #f3f4f6;
-}
-
-.order-success-page.dark .dropdown-item:hover {
-  background: #374151;
+  background: var(--bg-card-hover);
 }
 
 .dropdown-item.active {
-  background: #d32f2f;
+  background: var(--red);
   color: white;
 }
 
@@ -176,35 +139,27 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.8rem;
+  color: var(--text-primary);
 }
 
 .switch {
-  background: #e5e7eb;
-  border: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   padding: 0.3rem 1rem;
   border-radius: 2rem;
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  color: #4b5563;
+  color: var(--text-secondary);
 }
 
 .switch.active {
-  background: #16a34a;
+  background: var(--success);
   color: white;
+  border-color: var(--success);
 }
 
-.order-success-page.dark .switch {
-  background: #374151;
-  color: #9ca3af;
-}
-.order-success-page.dark .switch.active {
-  background: #16a34a;
-  color: white;
-}
-
-/* Row inputs (city/state) */
 .row-inputs {
   display: flex;
   gap: 0.8rem;
@@ -215,20 +170,19 @@
   flex: 1;
 }
 
-/* Error and status */
 .error-text {
-  color: #dc2626;
+  color: var(--red-bright);
   font-size: 0.75rem;
   margin-top: 0.25rem;
 }
 
 .field-input.error {
-  border-color: #dc2626;
+  border-color: var(--red-bright);
 }
 
 .status-row {
   font-size: 0.8rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-top: 0.25rem;
   display: flex;
   align-items: center;
@@ -237,16 +191,11 @@
 
 /* Customer found card */
 .found-card {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
+  background: var(--success-dim);
+  border: 1px solid rgba(16,185,129,0.3);
   border-radius: 0.5rem;
   padding: 0.75rem;
   margin-top: 0.5rem;
-}
-
-.order-success-page.dark .found-card {
-  background: #064e3b;
-  border-color: #059669;
 }
 
 .found-header {
@@ -255,19 +204,15 @@
   gap: 0.4rem;
   font-size: 0.8rem;
   font-weight: 500;
-  color: #065f46;
+  color: var(--success);
   margin-bottom: 0.4rem;
-}
-
-.order-success-page.dark .found-header {
-  color: #a7f3d0;
 }
 
 .edit-btn {
   margin-left: auto;
   background: none;
   border: none;
-  color: #d32f2f;
+  color: var(--red);
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 500;
@@ -276,25 +221,21 @@
 .customer-name {
   font-weight: 600;
   font-size: 0.9rem;
+  color: var(--text-primary);
 }
 
 .customer-sub {
   font-size: 0.75rem;
-  color: #4b5563;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 0.2rem;
   margin-top: 0.2rem;
 }
 
-.order-success-page.dark .customer-sub {
-  color: #9ca3af;
-}
-
-/* Not found box */
 .notfound-box {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--red-glow);
+  border: 1px solid rgba(220,38,38,0.3);
   border-radius: 0.5rem;
   padding: 0.75rem;
   margin-top: 0.5rem;
@@ -303,16 +244,11 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem;
-}
-
-.order-success-page.dark .notfound-box {
-  background: #7f1d1d;
-  border-color: #991b1b;
-  color: #fecaca;
+  color: var(--red-bright);
 }
 
 .add-btn {
-  background: #d32f2f;
+  background: var(--red);
   color: white;
   border: none;
   padding: 0.25rem 0.75rem;
@@ -325,11 +261,7 @@
 .total-preview {
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.order-success-page.dark .total-preview {
-  border-top-color: #374151;
+  border-top: 1px solid var(--border);
 }
 
 .summary-row {
@@ -337,6 +269,7 @@
   justify-content: space-between;
   margin-bottom: 0.6rem;
   font-size: 0.9rem;
+  color: var(--text-secondary);
 }
 
 .summary-row.total {
@@ -344,17 +277,18 @@
   font-size: 1rem;
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px dashed #d1d5db;
+  border-top: 1px dashed var(--border);
+  color: var(--text-primary);
 }
 
 .discount {
-  color: #16a34a;
+  color: var(--success);
 }
 
 /* Primary button */
 .primary-btn {
   width: 100%;
-  background: #d32f2f;
+  background: var(--red);
   color: white;
   border: none;
   padding: 0.8rem;
@@ -370,7 +304,7 @@
 }
 
 .primary-btn:hover {
-  background: #b71c1c;
+  background: var(--red-bright);
 }
 
 .primary-btn:disabled {
@@ -378,16 +312,11 @@
   cursor: not-allowed;
 }
 
-/* ======================= */
-/* MODALS (including scroll fix) */
-/* ======================= */
+/* Modal */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -396,20 +325,16 @@
 }
 
 .modal-content {
-  background: white;
+  background: var(--bg-modal);
   border-radius: 1rem;
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
   overflow: hidden;
-}
-
-.order-success-page.dark .modal-content {
-  background: #1f2937;
-  color: #f3f4f6;
 }
 
 .modal-header {
@@ -417,13 +342,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
   font-weight: 600;
   flex-shrink: 0;
-}
-
-.order-success-page.dark .modal-header {
-  border-bottom-color: #374151;
+  color: var(--text-primary);
 }
 
 .close-btn {
@@ -431,7 +353,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .modal-body {
@@ -440,9 +362,9 @@
   flex: 1;
 }
 
-/* Add/Edit Customer Modals */
 .phone-pill {
-  background: #e0e7ff;
+  background: var(--info-dim);
+  color: var(--info);
   padding: 0.3rem 0.8rem;
   border-radius: 2rem;
   display: inline-flex;
@@ -459,48 +381,56 @@
 }
 
 .type-btn {
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   padding: 0.3rem 1rem;
   border-radius: 2rem;
   cursor: pointer;
   font-size: 0.8rem;
+  color: var(--text-secondary);
+  transition: all 0.2s;
 }
 
 .type-btn.active {
-  background: #d32f2f;
+  background: var(--red);
   color: white;
-  border-color: #d32f2f;
+  border-color: var(--red);
 }
 
 .modal-input {
   width: 100%;
   padding: 0.5rem;
   margin-bottom: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.modal-input::placeholder {
+  color: var(--text-muted);
 }
 
 .save-btn {
   width: 100%;
-  background: #16a34a;
+  background: var(--success);
   color: white;
   border: none;
   padding: 0.6rem;
   border-radius: 0.5rem;
   cursor: pointer;
   margin-top: 0.5rem;
+  font-weight: 600;
 }
 
-/* ======================= */
-/* IMPROVED CONFIRM MODAL WITH SCROLL */
-/* ======================= */
+/* Confirm modal */
 .confirm-modal {
   max-width: 450px;
 }
 
 .confirm-modal .modal-header {
-  background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+  background: linear-gradient(135deg, var(--red) 0%, var(--red-dim) 100%);
   color: white;
   padding: 1.25rem 1.5rem;
   border-bottom: none;
@@ -513,11 +443,12 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  color: white;
 }
 
 .confirm-modal .close-btn {
   color: white;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255,255,255,0.2);
   border-radius: 50%;
   width: 28px;
   height: 28px;
@@ -528,42 +459,22 @@
 }
 
 .confirm-modal .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.confirm-modal .modal-body {
-  padding: 1.5rem;
-  background: white;
-  overflow-y: auto; /* ensures scrolling if content overflows */
-}
-
-.order-success-page.dark .confirm-modal .modal-body {
-  background: #1f2937;
+  background: rgba(255,255,255,0.3);
 }
 
 .confirm-modal .modal-body > p {
   font-size: 0.95rem;
-  color: #4b5563;
+  color: var(--text-secondary);
   margin-bottom: 1.25rem;
   text-align: center;
 }
 
-.order-success-page.dark .confirm-modal .modal-body > p {
-  color: #9ca3af;
-}
-
-/* Confirmation info box */
 .confirm-info {
-  background: #f8fafc;
+  background: var(--bg-surface);
   border-radius: 0.75rem;
   padding: 1rem;
   margin: 1rem 0;
-  border: 1px solid #e2e8f0;
-}
-
-.order-success-page.dark .confirm-info {
-  background: #0f172a;
-  border-color: #334155;
+  border: 1px solid var(--border);
 }
 
 .confirm-info div {
@@ -572,7 +483,8 @@
   margin-bottom: 0.6rem;
   font-size: 0.85rem;
   padding-bottom: 0.4rem;
-  border-bottom: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed var(--border-subtle);
+  color: var(--text-secondary);
 }
 
 .confirm-info div:last-child {
@@ -581,29 +493,16 @@
   padding-bottom: 0;
 }
 
-.order-success-page.dark .confirm-info div {
-  border-bottom-color: #334155;
-}
-
 .confirm-info strong {
-  color: #1e293b;
+  color: var(--text-primary);
   font-weight: 600;
-}
-
-.order-success-page.dark .confirm-info strong {
-  color: #f1f5f9;
 }
 
 .confirm-info div span:last-child {
   font-weight: 500;
-  color: #d32f2f;
+  color: var(--red);
 }
 
-.order-success-page.dark .confirm-info div span:last-child {
-  color: #ef4444;
-}
-
-/* Buttons in confirm modal */
 .confirm-buttons {
   display: flex;
   gap: 1rem;
@@ -612,19 +511,14 @@
 
 .confirm-buttons .primary-btn {
   flex: 1;
-  background: #d32f2f;
   padding: 0.7rem;
   font-size: 0.9rem;
-}
-
-.confirm-buttons .primary-btn:hover {
-  background: #b71c1c;
 }
 
 .confirm-buttons .outline-btn {
   flex: 1;
   background: transparent;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border);
   padding: 0.7rem;
   border-radius: 0.5rem;
   cursor: pointer;
@@ -632,20 +526,12 @@
   font-size: 0.9rem;
   text-align: center;
   transition: all 0.2s;
-  color: #4b5563;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
 }
 
 .confirm-buttons .outline-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-}
-
-.order-success-page.dark .confirm-buttons .outline-btn {
-  border-color: #475569;
-  color: #94a3b8;
-}
-
-.order-success-page.dark .confirm-buttons .outline-btn:hover {
-  background: #334155;
-  color: #e2e8f0;
+  background: var(--bg-card-hover);
+  border-color: var(--red);
+  color: var(--text-primary);
 }

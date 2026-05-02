@@ -1,27 +1,10 @@
-/* CentralStockPage.css */
+/* CentralStockPage.css — uses global theme vars from index.css */
 .central-stock-page {
   padding: 2rem;
   min-height: 100vh;
-  background: var(--bg-primary, #f9fafb);
+  background: var(--bg-base);
+  color: var(--text-primary);
   transition: background 0.2s, color 0.2s;
-}
-
-.central-stock-page.dark {
-  --bg-primary: #111827;
-  --card-bg: #1f2937;
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --border: #374151;
-  --accent: #d32f2f;
-}
-
-.central-stock-page:not(.dark) {
-  --bg-primary: #f5f5f5;
-  --card-bg: #ffffff;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --border: #e5e7eb;
-  --accent: #d32f2f;
 }
 
 .stock-header {
@@ -37,13 +20,14 @@
   margin: 0;
   font-size: 1.875rem;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .refresh-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--card-bg);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   padding: 0.5rem 1rem;
@@ -53,9 +37,9 @@
 }
 
 .refresh-btn:hover {
-  background: var(--accent);
+  background: var(--red);
   color: white;
-  border-color: var(--accent);
+  border-color: var(--red);
 }
 
 .stock-tabs {
@@ -79,7 +63,7 @@
 }
 
 .tab-btn.active {
-  background: var(--accent);
+  background: var(--red);
   color: white;
 }
 
@@ -94,7 +78,7 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  background: var(--card-bg);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   padding: 0.35rem 0.8rem;
   border-radius: 2rem;
@@ -105,14 +89,14 @@
 }
 
 .time-filter-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--red);
+  border-color: var(--red);
   color: white;
 }
 
 /* Overview styles */
 .total-card {
-  background: var(--card-bg);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1.25rem;
@@ -123,7 +107,7 @@
 .total-value {
   font-size: 2rem;
   font-weight: bold;
-  color: var(--accent);
+  color: var(--red);
   margin-bottom: 0.5rem;
 }
 
@@ -145,14 +129,17 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
-  background: var(--bg-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   padding: 0.5rem 1rem;
   border-radius: 2rem;
+  color: var(--text-secondary);
 }
 
 .summary-item strong {
   margin-left: 0.25rem;
   font-weight: 700;
+  color: var(--text-primary);
 }
 
 .stock-grid {
@@ -162,7 +149,7 @@
 }
 
 .stock-card {
-  background: var(--card-bg);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1rem;
@@ -176,7 +163,7 @@
 }
 
 .icon-circle {
-  background: #ffebee;
+  background: var(--red-glow);
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -184,6 +171,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  color: var(--red-bright);
 }
 
 .product-info {
@@ -210,7 +198,7 @@
 }
 
 .card-details {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-subtle);
   padding-top: 0.75rem;
 }
 
@@ -219,6 +207,12 @@
   justify-content: space-between;
   font-size: 0.85rem;
   margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.detail-row span:last-child {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 /* History list styles */
@@ -229,7 +223,7 @@
 }
 
 .history-card {
-  background: var(--card-bg);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1rem;
@@ -259,7 +253,7 @@
 
 .history-note {
   font-size: 0.7rem;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   margin-top: 0.25rem;
 }
 
@@ -273,12 +267,8 @@
   font-size: 0.9rem;
 }
 
-.history-qty.inward {
-  color: #2e7d32;
-}
-.history-qty.outward {
-  color: #c62828;
-}
+.history-qty.inward  { color: var(--success); }
+.history-qty.outward { color: var(--red); }
 
 .history-price {
   font-size: 0.75rem;
@@ -289,13 +279,14 @@
   font-weight: 600;
   font-size: 0.85rem;
   margin-top: 0.25rem;
+  color: var(--text-primary);
 }
 
 .empty-state {
   text-align: center;
   padding: 3rem;
   color: var(--text-secondary);
-  background: var(--card-bg);
+  background: var(--bg-card);
   border-radius: 1rem;
   border: 1px solid var(--border);
 }
@@ -304,6 +295,7 @@
   display: block;
   font-size: 0.75rem;
   margin-top: 0.5rem;
+  color: var(--text-muted);
 }
 
 .stock-loading {
@@ -313,6 +305,7 @@
   justify-content: center;
   height: 60vh;
   gap: 1rem;
+  color: var(--text-secondary);
 }
 
 .spin {

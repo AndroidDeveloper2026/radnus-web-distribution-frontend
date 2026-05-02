@@ -48,7 +48,7 @@
 .sidebar-brand-sub  { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
 .sidebar-toggle {
   flex-shrink: 0; width: 28px; height: 28px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border); background: #fff;
+  border: 1px solid var(--border); background: var(--bg-card);
   color: var(--text-muted); display: flex; align-items: center; justify-content: center;
   transition: var(--transition);
 }
