@@ -412,6 +412,9 @@
   color: var(--text-muted);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ✅ FIXED: Save button now uses flex to perfectly centre the text
+   ═══════════════════════════════════════════════════════════════ */
 .save-btn {
   width: 100%;
   background: var(--success);
@@ -422,6 +425,9 @@
   cursor: pointer;
   margin-top: 0.5rem;
   font-weight: 600;
+  display: flex;              /* becomes flex container */
+  align-items: center;        /* vertical centering */
+  justify-content: center;    /* horizontal centering – no quotes */
 }
 
 /* Confirm modal */
@@ -534,4 +540,38 @@
   background: var(--bg-card-hover);
   border-color: var(--red);
   color: var(--text-primary);
+}
+
+/* Additional rules from your snippet */
+.field-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin: 0.75rem 0 0.25rem;
+  color: var(--text-primary);
+}
+
+.address-textarea {
+  min-height: 70px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.found-card .address-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  background: rgba(0,0,0,0.03);
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.confirm-info div span:last-child {
+  color: var(--text-primary);
+  font-weight: 500;
 }
