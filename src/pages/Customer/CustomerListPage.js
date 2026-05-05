@@ -1,7 +1,6 @@
 // // src/pages/Customer/CustomerListPage.js
 // import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // import { useDispatch, useSelector } from 'react-redux';
-// import { createSelector } from '@reduxjs/toolkit';
 // import {
 //   fetchAllCustomers,
 //   deleteCustomer,
@@ -22,6 +21,7 @@
 //   Pencil,
 //   Trash2,
 //   Loader,
+//   CheckCircle,
 // } from 'lucide-react';
 
 // // ----------------------------------------------------------------------
@@ -75,28 +75,6 @@
 // });
 
 // // ----------------------------------------------------------------------
-// // Memoized filter selector (only recomputes when customers or search changes)
-// // ----------------------------------------------------------------------
-// const selectCustomers = (state) => state.customer.list;
-// const selectSearchText = (_, searchText) => searchText;
-
-// const makeSelectFilteredCustomers = () =>
-//   createSelector(
-//     [selectCustomers, selectSearchText],
-//     (customers, searchText) => {
-//       if (!searchText || !customers) return customers || [];
-//       const q = searchText.toLowerCase().trim();
-//       return customers.filter(
-//         (c) =>
-//           c.name?.toLowerCase().includes(q) ||
-//           c.phone?.includes(q) ||
-//           c.city?.toLowerCase().includes(q) ||
-//           c.state?.toLowerCase().includes(q)
-//       );
-//     }
-//   );
-
-// // ----------------------------------------------------------------------
 // // Main Component
 // // ----------------------------------------------------------------------
 // const CustomerListPage = () => {
@@ -105,11 +83,11 @@
 //   const isDark = theme === 'dark';
 
 //   // Auth – adjust to your actual auth slice (e.g., state.adminAuth, state.auth)
-//   const { user } = useSelector((state) => state.auth || { user: null });
+//   const user = useSelector((state) => state.auth?.user || null);
 //   const isAdmin = user?.role === 'Admin' || user?.role === 'MarketingManager';
 
 //   // Redux state
-//   const { list: customers = [], loading, error, updateLoading } = useSelector(
+//   const { list: customers = [], loading, error, updateLoading, updateSuccess } = useSelector(
 //     (state) => state.customer
 //   );
 
@@ -122,38 +100,59 @@
 //   const [editAddress, setEditAddress] = useState('');
 //   const [editCity, setEditCity] = useState('');
 //   const [editState, setEditState] = useState('');
+//   const [isSaving, setIsSaving] = useState(false);
+//   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-//   // Memoized filtered list (stable selector + custom equality)
-//   const selectFilteredCustomers = useMemo(makeSelectFilteredCustomers, []);
-//   const filteredCustomers = useSelector(
-//     (state) => selectFilteredCustomers(state, debouncedSearch),
-//     (left, right) => {
-//       if (left.length !== right.length) return false;
-//       for (let i = 0; i < left.length; i++) {
-//         if (left[i]._id !== right[i]._id || left[i].phone !== right[i].phone) return false;
-//       }
-//       return true;
-//     }
-//   );
+//   // Optimized filtering with useMemo
+//   const filteredCustomers = useMemo(() => {
+//     if (!customers) return [];
+//     if (!debouncedSearch) return customers;
+//     const q = debouncedSearch.toLowerCase().trim();
+//     return customers.filter(
+//       (c) =>
+//         c.name?.toLowerCase().includes(q) ||
+//         c.phone?.includes(q) ||
+//         c.city?.toLowerCase().includes(q) ||
+//         c.state?.toLowerCase().includes(q)
+//     );
+//   }, [customers, debouncedSearch]);
 
 //   // ------------------------------------------------------------------
 //   // Effects
 //   // ------------------------------------------------------------------
+//   // Debounce search input
 //   useEffect(() => {
 //     const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
 //     return () => clearTimeout(timer);
 //   }, [searchText]);
 
+//   // Initial fetch
 //   useEffect(() => {
 //     dispatch(fetchAllCustomers());
 //   }, [dispatch]);
 
-//   // Auto-close modal when update finishes without error
+//   // Handle successful update - close modal and show success message
 //   useEffect(() => {
-//     if (!updateLoading && editModalOpen && !error && selectedCustomer) {
+//     if (isSaving && !updateLoading && updateSuccess && !error) {
 //       setEditModalOpen(false);
+//       setIsSaving(false);
+//       setShowSuccessMessage(true);
+      
+//       // Auto-hide success message after 3 seconds
+//       const timer = setTimeout(() => {
+//         setShowSuccessMessage(false);
+//       }, 3000);
+      
+//       return () => clearTimeout(timer);
 //     }
-//   }, [updateLoading, error, editModalOpen, selectedCustomer]);
+//   }, [isSaving, updateLoading, updateSuccess, error]);
+
+//   // Clear success flags when modal is closed manually
+//   useEffect(() => {
+//     if (!editModalOpen && !isSaving) {
+//       dispatch(clearCustomerError());
+//     }
+//   }, [editModalOpen, isSaving, dispatch]);
 
 //   // ------------------------------------------------------------------
 //   // Handlers (useCallback for stability)
@@ -164,16 +163,22 @@
 
 //   const openEditModal = useCallback((customer) => {
 //     if (!isAdmin) return;
+//     // Clear any previous state
+//     dispatch(clearCustomerError());
+//     setIsSaving(false);
+    
 //     setSelectedCustomer(customer);
 //     setEditName(customer.name || '');
 //     setEditAddress(customer.address || '');
 //     setEditCity(customer.city || '');
 //     setEditState(customer.state || '');
 //     setEditModalOpen(true);
-//   }, [isAdmin]);
+//   }, [isAdmin, dispatch]);
 
 //   const handleSaveEdit = useCallback(() => {
 //     if (!isAdmin || !editName.trim() || !selectedCustomer) return;
+    
+//     setIsSaving(true);
 //     dispatch(
 //       updateCustomer({
 //         phone: selectedCustomer.phone,
@@ -200,9 +205,17 @@
 //   }, [dispatch]);
 
 //   const handleClearSearch = useCallback(() => setSearchText(''), []);
-//   const handleCloseModal = useCallback(() => setEditModalOpen(false), []);
+  
+//   const handleCloseModal = useCallback(() => {
+//     // Only allow closing if not currently saving
+//     if (!updateLoading) {
+//       setEditModalOpen(false);
+//       setSelectedCustomer(null);
+//       setIsSaving(false);
+//     }
+//   }, [updateLoading]);
 
-//   // Render each customer card (memoized)
+//   // Memoized card renderer
 //   const renderItem = useCallback((customer) => (
 //     <CustomerCard
 //       key={customer._id || customer.phone}
@@ -236,43 +249,81 @@
 //   // ------------------------------------------------------------------
 //   return (
 //     <div className={`customer-page ${isDark ? 'dark' : ''}`}>
+//       {/* Success Message Toast */}
+//       {showSuccessMessage && (
+//         <div className="success-toast">
+//           <CheckCircle size={18} />
+//           <span>Customer updated successfully!</span>
+//         </div>
+//       )}
+      
 //       <div className="customer-header">
-//         <h1>Customers</h1>
-//         <div className="search-wrapper">
-//           <Search size={18} />
-//           <input
-//             type="text"
-//             placeholder="Search by name, phone or city…"
-//             value={searchText}
-//             onChange={(e) => setSearchText(e.target.value)}
-//             className="search-input"
-//           />
-//           {searchText && (
-//             <button onClick={handleClearSearch} className="search-clear">
-//               <X size={16} />
-//             </button>
+//         <div className="title-section">
+//           <h1>Customers</h1>
+//           {!loading && customers.length > 0 && (
+//             <span className="customer-badge">{customers.length}</span>
 //           )}
+//         </div>
+//         <div className="header-actions">
+//           <button 
+//             onClick={handleRefresh} 
+//             className="btn-refresh"
+//             disabled={loading}
+//             title="Refresh customers"
+//           >
+//             <RefreshCw size={18} className={loading ? 'spin' : ''} />
+//           </button>
+//           <div className="search-wrapper">
+//             <Search size={18} />
+//             <input
+//               type="text"
+//               placeholder="Search by name, phone or city…"
+//               value={searchText}
+//               onChange={(e) => setSearchText(e.target.value)}
+//               className="search-input"
+//             />
+//             {searchText && (
+//               <button onClick={handleClearSearch} className="search-clear">
+//                 <X size={16} />
+//               </button>
+//             )}
+//           </div>
 //         </div>
 //       </div>
 
 //       {loading && customers.length === 0 ? (
 //         <div className="customer-loading">
-//           <Loader className="spin" size={32} />
+//           <div className="spinner"></div>
 //           <p>Loading customers…</p>
 //         </div>
 //       ) : (
 //         <>
+//           {/* Error banner for update/delete errors when list exists */}
+//           {error && customers.length > 0 && (
+//             <div className="error-banner">
+//               <span>{error}</span>
+//               <button 
+//                 onClick={() => dispatch(clearCustomerError())}
+//                 className="error-dismiss"
+//               >
+//                 <X size={16} />
+//               </button>
+//             </div>
+//           )}
+          
 //           <div className="customer-grid">
 //             {filteredCustomers.map(renderItem)}
 //           </div>
 
 //           {filteredCustomers.length === 0 && (
 //             <div className="customer-empty">
-//               <User size={48} />
+//               <div className="empty-illustration">
+//                 <User size={56} strokeWidth={1.5} />
+//               </div>
 //               <h3>{searchText ? 'No results found' : 'No customers yet'}</h3>
 //               <p>
 //                 {searchText
-//                   ? `No customer matches “${searchText}”`
+//                   ? `No customer matches "${searchText}"`
 //                   : 'Customers added from orders will appear here'}
 //               </p>
 //               {searchText && (
@@ -286,66 +337,113 @@
 //           {customers.length > 0 && (
 //             <div className="customer-count">
 //               {searchText
-//                 ? `${filteredCustomers.length} of ${customers.length} customers`
-//                 : `${customers.length} customer${customers.length !== 1 ? 's' : ''}`}
+//                 ? `Showing ${filteredCustomers.length} of ${customers.length} customers`
+//                 : `${customers.length} customer${customers.length !== 1 ? 's' : ''} total`}
 //             </div>
 //           )}
 //         </>
 //       )}
 
 //       {/* Edit Modal */}
-//       {editModalOpen && (
+//       {editModalOpen && selectedCustomer && (
 //         <div className="modal-overlay" onClick={handleCloseModal}>
 //           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
 //             <div className="modal-header">
 //               <h3>
 //                 <Pencil size={18} /> Edit Customer
 //               </h3>
-//               <button className="modal-close" onClick={handleCloseModal}>
+//               <button 
+//                 className="modal-close" 
+//                 onClick={handleCloseModal}
+//                 disabled={updateLoading}
+//               >
 //                 <X size={20} />
 //               </button>
 //             </div>
 //             <div className="modal-body">
 //               <div className="phone-pill">
-//                 <Phone size={12} /> {selectedCustomer?.phone}
+//                 <Phone size={12} /> {selectedCustomer.phone}
 //               </div>
-//               <input
-//                 type="text"
-//                 placeholder="Customer Name *"
-//                 value={editName}
-//                 onChange={(e) => setEditName(e.target.value)}
-//                 className="modal-input"
-//               />
-//               <textarea
-//                 placeholder="Address"
-//                 value={editAddress}
-//                 onChange={(e) => setEditAddress(e.target.value)}
-//                 rows={2}
-//                 className="modal-input"
-//               />
-//               <div className="row">
+              
+//               {error && (
+//                 <div className="modal-error">
+//                   <span>{error}</span>
+//                 </div>
+//               )}
+              
+//               <div className="form-group">
+//                 <label htmlFor="edit-name">Customer Name *</label>
 //                 <input
+//                   id="edit-name"
 //                   type="text"
-//                   placeholder="City"
-//                   value={editCity}
-//                   onChange={(e) => setEditCity(e.target.value)}
+//                   placeholder="Enter customer name"
+//                   value={editName}
+//                   onChange={(e) => setEditName(e.target.value)}
 //                   className="modal-input"
-//                 />
-//                 <input
-//                   type="text"
-//                   placeholder="State"
-//                   value={editState}
-//                   onChange={(e) => setEditState(e.target.value)}
-//                   className="modal-input"
+//                   autoFocus
 //                 />
 //               </div>
-//               <button
-//                 onClick={handleSaveEdit}
-//                 disabled={updateLoading}
-//                 className="btn-save"
-//               >
-//                 {updateLoading ? <Loader size={16} className="spin" /> : 'Save Changes'}
-//               </button>
+              
+//               <div className="form-group">
+//                 <label htmlFor="edit-address">Address</label>
+//                 <textarea
+//                   id="edit-address"
+//                   placeholder="Enter address"
+//                   value={editAddress}
+//                   onChange={(e) => setEditAddress(e.target.value)}
+//                   rows={2}
+//                   className="modal-input"
+//                 />
+//               </div>
+              
+//               <div className="form-row">
+//                 <div className="form-group">
+//                   <label htmlFor="edit-city">City</label>
+//                   <input
+//                     id="edit-city"
+//                     type="text"
+//                     placeholder="City"
+//                     value={editCity}
+//                     onChange={(e) => setEditCity(e.target.value)}
+//                     className="modal-input"
+//                   />
+//                 </div>
+//                 <div className="form-group">
+//                   <label htmlFor="edit-state">State</label>
+//                   <input
+//                     id="edit-state"
+//                     type="text"
+//                     placeholder="State"
+//                     value={editState}
+//                     onChange={(e) => setEditState(e.target.value)}
+//                     className="modal-input"
+//                   />
+//                 </div>
+//               </div>
+              
+//               <div className="modal-actions">
+//                 <button
+//                   onClick={handleCloseModal}
+//                   className="btn-cancel"
+//                   disabled={updateLoading}
+//                 >
+//                   Cancel
+//                 </button>
+//                 <button
+//                   onClick={handleSaveEdit}
+//                   disabled={updateLoading || !editName.trim()}
+//                   className="btn-save"
+//                 >
+//                   {updateLoading ? (
+//                     <>
+//                       <Loader size={16} className="spin" />
+//                       Saving...
+//                     </>
+//                   ) : (
+//                     'Save Changes'
+//                   )}
+//                 </button>
+//               </div>
 //             </div>
 //           </div>
 //         </div>
@@ -356,11 +454,13 @@
 
 // export default CustomerListPage;
 
-//------------------------------
+//------------claude new code --------------
 
 // src/pages/Customer/CustomerListPage.js
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+
+const PAGE_SIZE = 20; // cards per batch
 import {
   fetchAllCustomers,
   deleteCustomer,
@@ -381,6 +481,7 @@ import {
   Pencil,
   Trash2,
   Loader,
+  CheckCircle,
 } from 'lucide-react';
 
 // ----------------------------------------------------------------------
@@ -442,11 +543,11 @@ const CustomerListPage = () => {
   const isDark = theme === 'dark';
 
   // Auth – adjust to your actual auth slice (e.g., state.adminAuth, state.auth)
-  const { user } = useSelector((state) => state.auth || { user: null });
+  const user = useSelector((state) => state.auth?.user || null);
   const isAdmin = user?.role === 'Admin' || user?.role === 'MarketingManager';
 
   // Redux state
-  const { list: customers = [], loading, error, updateLoading } = useSelector(
+  const { list: customers = [], loading, error, updateLoading, updateSuccess } = useSelector(
     (state) => state.customer
   );
 
@@ -459,8 +560,12 @@ const CustomerListPage = () => {
   const [editAddress, setEditAddress] = useState('');
   const [editCity, setEditCity] = useState('');
   const [editState, setEditState] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef(null);
 
-  // Optimized filtering with useMemo (no extra deep equality checks)
+  // Optimized filtering with useMemo
   const filteredCustomers = useMemo(() => {
     if (!customers) return [];
     if (!debouncedSearch) return customers;
@@ -474,24 +579,66 @@ const CustomerListPage = () => {
     );
   }, [customers, debouncedSearch]);
 
-  // ------------------------------------------------------------------
-  // Effects
-  // ------------------------------------------------------------------
+  // Slice to only the visible portion (lazy rendering)
+  const visibleCustomers = useMemo(
+    () => filteredCustomers.slice(0, visibleCount),
+    [filteredCustomers, visibleCount]
+  );
+
+  // Reset visible count whenever the filtered list changes (new search)
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [debouncedSearch]);
+
+  // IntersectionObserver — load next batch when sentinel enters viewport
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredCustomers.length));
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [filteredCustomers.length]);
+
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
     return () => clearTimeout(timer);
   }, [searchText]);
 
+  // Initial fetch
   useEffect(() => {
     dispatch(fetchAllCustomers());
   }, [dispatch]);
 
-  // Auto-close modal when update finishes without error
+  // Handle successful update - close modal and show success message
   useEffect(() => {
-    if (!updateLoading && editModalOpen && !error && selectedCustomer) {
+    if (isSaving && !updateLoading && updateSuccess && !error) {
       setEditModalOpen(false);
+      setIsSaving(false);
+      setShowSuccessMessage(true);
+      
+      // Auto-hide success message after 3 seconds
+      const timer = setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [updateLoading, error, editModalOpen, selectedCustomer]);
+  }, [isSaving, updateLoading, updateSuccess, error]);
+
+  // Clear success flags when modal is closed manually
+  useEffect(() => {
+    if (!editModalOpen && !isSaving) {
+      dispatch(clearCustomerError());
+    }
+  }, [editModalOpen, isSaving, dispatch]);
 
   // ------------------------------------------------------------------
   // Handlers (useCallback for stability)
@@ -502,16 +649,22 @@ const CustomerListPage = () => {
 
   const openEditModal = useCallback((customer) => {
     if (!isAdmin) return;
+    // Clear any previous state
+    dispatch(clearCustomerError());
+    setIsSaving(false);
+    
     setSelectedCustomer(customer);
     setEditName(customer.name || '');
     setEditAddress(customer.address || '');
     setEditCity(customer.city || '');
     setEditState(customer.state || '');
     setEditModalOpen(true);
-  }, [isAdmin]);
+  }, [isAdmin, dispatch]);
 
   const handleSaveEdit = useCallback(() => {
     if (!isAdmin || !editName.trim() || !selectedCustomer) return;
+    
+    setIsSaving(true);
     dispatch(
       updateCustomer({
         phone: selectedCustomer.phone,
@@ -538,7 +691,15 @@ const CustomerListPage = () => {
   }, [dispatch]);
 
   const handleClearSearch = useCallback(() => setSearchText(''), []);
-  const handleCloseModal = useCallback(() => setEditModalOpen(false), []);
+  
+  const handleCloseModal = useCallback(() => {
+    // Only allow closing if not currently saving
+    if (!updateLoading) {
+      setEditModalOpen(false);
+      setSelectedCustomer(null);
+      setIsSaving(false);
+    }
+  }, [updateLoading]);
 
   // Memoized card renderer
   const renderItem = useCallback((customer) => (
@@ -574,6 +735,14 @@ const CustomerListPage = () => {
   // ------------------------------------------------------------------
   return (
     <div className={`customer-page ${isDark ? 'dark' : ''}`}>
+      {/* Success Message Toast */}
+      {showSuccessMessage && (
+        <div className="success-toast">
+          <CheckCircle size={18} />
+          <span>Customer updated successfully!</span>
+        </div>
+      )}
+      
       <div className="customer-header">
         <div className="title-section">
           <h1>Customers</h1>
@@ -581,20 +750,30 @@ const CustomerListPage = () => {
             <span className="customer-badge">{customers.length}</span>
           )}
         </div>
-        <div className="search-wrapper">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Search by name, phone or city…"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="search-input"
-          />
-          {searchText && (
-            <button onClick={handleClearSearch} className="search-clear">
-              <X size={16} />
-            </button>
-          )}
+        <div className="header-actions">
+          <button 
+            onClick={handleRefresh} 
+            className="btn-refresh"
+            disabled={loading}
+            title="Refresh customers"
+          >
+            <RefreshCw size={18} className={loading ? 'spin' : ''} />
+          </button>
+          <div className="search-wrapper">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search by name, phone or city…"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="search-input"
+            />
+            {searchText && (
+              <button onClick={handleClearSearch} className="search-clear">
+                <X size={16} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -605,9 +784,30 @@ const CustomerListPage = () => {
         </div>
       ) : (
         <>
+          {/* Error banner for update/delete errors when list exists */}
+          {error && customers.length > 0 && (
+            <div className="error-banner">
+              <span>{error}</span>
+              <button 
+                onClick={() => dispatch(clearCustomerError())}
+                className="error-dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+          
           <div className="customer-grid">
-            {filteredCustomers.map(renderItem)}
+            {visibleCustomers.map(renderItem)}
           </div>
+
+          {/* Sentinel element — triggers loading the next batch */}
+          {visibleCount < filteredCustomers.length && (
+            <div ref={sentinelRef} className="customer-loading" style={{ padding: '2rem' }}>
+              <div className="spinner"></div>
+              <p>Loading more…</p>
+            </div>
+          )}
 
           {filteredCustomers.length === 0 && (
             <div className="customer-empty">
@@ -617,7 +817,7 @@ const CustomerListPage = () => {
               <h3>{searchText ? 'No results found' : 'No customers yet'}</h3>
               <p>
                 {searchText
-                  ? `No customer matches “${searchText}”`
+                  ? `No customer matches "${searchText}"`
                   : 'Customers added from orders will appear here'}
               </p>
               {searchText && (
@@ -631,66 +831,113 @@ const CustomerListPage = () => {
           {customers.length > 0 && (
             <div className="customer-count">
               {searchText
-                ? `${filteredCustomers.length} of ${customers.length} customers`
-                : `${customers.length} customer${customers.length !== 1 ? 's' : ''}`}
+                ? `Showing ${filteredCustomers.length} of ${customers.length} customers`
+                : `${customers.length} customer${customers.length !== 1 ? 's' : ''} total`}
             </div>
           )}
         </>
       )}
 
       {/* Edit Modal */}
-      {editModalOpen && (
+      {editModalOpen && selectedCustomer && (
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>
                 <Pencil size={18} /> Edit Customer
               </h3>
-              <button className="modal-close" onClick={handleCloseModal}>
+              <button 
+                className="modal-close" 
+                onClick={handleCloseModal}
+                disabled={updateLoading}
+              >
                 <X size={20} />
               </button>
             </div>
             <div className="modal-body">
               <div className="phone-pill">
-                <Phone size={12} /> {selectedCustomer?.phone}
+                <Phone size={12} /> {selectedCustomer.phone}
               </div>
-              <input
-                type="text"
-                placeholder="Customer Name *"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="modal-input"
-              />
-              <textarea
-                placeholder="Address"
-                value={editAddress}
-                onChange={(e) => setEditAddress(e.target.value)}
-                rows={2}
-                className="modal-input"
-              />
-              <div className="row">
+              
+              {error && (
+                <div className="modal-error">
+                  <span>{error}</span>
+                </div>
+              )}
+              
+              <div className="form-group">
+                <label htmlFor="edit-name">Customer Name *</label>
                 <input
+                  id="edit-name"
                   type="text"
-                  placeholder="City"
-                  value={editCity}
-                  onChange={(e) => setEditCity(e.target.value)}
+                  placeholder="Enter customer name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
                   className="modal-input"
-                />
-                <input
-                  type="text"
-                  placeholder="State"
-                  value={editState}
-                  onChange={(e) => setEditState(e.target.value)}
-                  className="modal-input"
+                  autoFocus
                 />
               </div>
-              <button
-                onClick={handleSaveEdit}
-                disabled={updateLoading}
-                className="btn-save"
-              >
-                {updateLoading ? <Loader size={16} className="spin" /> : 'Save Changes'}
-              </button>
+              
+              <div className="form-group">
+                <label htmlFor="edit-address">Address</label>
+                <textarea
+                  id="edit-address"
+                  placeholder="Enter address"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  rows={2}
+                  className="modal-input"
+                />
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="edit-city">City</label>
+                  <input
+                    id="edit-city"
+                    type="text"
+                    placeholder="City"
+                    value={editCity}
+                    onChange={(e) => setEditCity(e.target.value)}
+                    className="modal-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="edit-state">State</label>
+                  <input
+                    id="edit-state"
+                    type="text"
+                    placeholder="State"
+                    value={editState}
+                    onChange={(e) => setEditState(e.target.value)}
+                    className="modal-input"
+                  />
+                </div>
+              </div>
+              
+              <div className="modal-actions">
+                <button
+                  onClick={handleCloseModal}
+                  className="btn-cancel"
+                  disabled={updateLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={updateLoading || !editName.trim()}
+                  className="btn-save"
+                >
+                  {updateLoading ? (
+                    <>
+                      <Loader size={16} className="spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-// import React from "react";
+// import React, { useState, useRef, useEffect } from "react";
 // import { NavLink, useNavigate } from "react-router-dom";
 // import { useDispatch } from "react-redux";
 // import { useTheme } from "../../context/ThemeContext";
@@ -27,7 +27,9 @@
 //   Star,
 //   Settings,
 //   Home,
-//   MessageSquare, 
+//   MessageSquare,
+//   MoreVertical,
+//   AlertTriangle,
 // } from "lucide-react";
 
 // const ROLE_NAV = {
@@ -41,12 +43,10 @@
 //     { path: "/fse", label: "Field Execs", icon: Users },
 //     { path: "/territory", label: "Territory", icon: Map },
 //     { path: "/customers", label: "Customers", icon: Users },
-//     // { path: "/orders", label: "Orders", icon: ShoppingCart },
-//     // { path: "/order-cart", label: "Place Order", icon: ShoppingCart },  // ✅ new
 //     { path: "/stock-visibility", label: "Stock Visibility", icon: Package },
 //     { path: "/central-stock", label: "Central Stock", icon: Package },
-//      { path: "/activity-logs", label: "Activity Log", icon: FileText },
-//      { path: "/admin-feedback", label: "Admin Feedback", icon: MessageSquare },
+//     { path: "/activity-logs", label: "Activity Log", icon: FileText },
+//     { path: "/admin-feedback", label: "Admin Feedback", icon: MessageSquare },
 //     { path: "/reports", label: "Reports", icon: BarChart3 },
 //     { path: "/profile", label: "Profile", icon: Settings },
 //   ],
@@ -55,7 +55,7 @@
 //     { path: "/products", label: "Products", icon: Package },
 //     { path: "/customers", label: "Customers", icon: Users },
 //     { path: "/invoices", label: "Invoices History", icon: Store },
-//     { path: "/order-cart", label: "Place Order", icon: ShoppingCart },   // ✅ new
+//     { path: "/order-cart", label: "Place Order", icon: ShoppingCart },
 //     { path: "/stock-visibility", label: "Stock Visibility", icon: Package },
 //     { path: "/central-stock", label: "Central Stock", icon: Package },
 //     { path: "/feedback", label: "Feedback", icon: Star },
@@ -67,7 +67,7 @@
 //     { path: "/products", label: "Products", icon: Package },
 //     { path: "/retailers", label: "Retailers", icon: Store },
 //     { path: "/orders", label: "Orders", icon: ShoppingCart },
-//     { path: "/order-cart", label: "Place Order", icon: ShoppingCart },   // ✅ new
+//     { path: "/order-cart", label: "Place Order", icon: ShoppingCart },
 //     { path: "/invoices", label: "Invoices", icon: FileText },
 //     { path: "/stock-visibility", label: "Stock Visibility", icon: Package },
 //     { path: "/central-stock", label: "Central Stock", icon: Package },
@@ -97,7 +97,7 @@
 //     { path: "/retailers", label: "Retailers", icon: Store },
 //     { path: "/products", label: "Products", icon: Package },
 //     { path: "/orders", label: "Orders", icon: ShoppingCart },
-//     { path: "/order-cart", label: "Place Order", icon: ShoppingCart },   // ✅ new
+//     { path: "/order-cart", label: "Place Order", icon: ShoppingCart },
 //     { path: "/reports", label: "Reports", icon: BarChart3 },
 //     { path: "/profile", label: "Profile", icon: Settings },
 //   ],
@@ -105,7 +105,7 @@
 //     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
 //     { path: "/products", label: "Products", icon: Package },
 //     { path: "/orders", label: "My Orders", icon: ShoppingCart },
-//     { path: "/order-cart", label: "Place Order", icon: ShoppingCart },   // ✅ new
+//     { path: "/order-cart", label: "Place Order", icon: ShoppingCart },
 //     { path: "/invoices", label: "Invoices", icon: FileText },
 //     { path: "/feedback", label: "Feedback", icon: Star },
 //     { path: "/profile", label: "Profile", icon: Settings },
@@ -125,88 +125,174 @@
 //     .toUpperCase()
 //     .slice(0, 2);
 
-//   const handleLogout = async () => {
+//   const [dropdownOpen, setDropdownOpen] = useState(false);
+//   const [showLogoutModal, setShowLogoutModal] = useState(false);
+//   const dropdownRef = useRef(null);
+
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+//         setDropdownOpen(false);
+//       }
+//     };
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => document.removeEventListener("mousedown", handleClickOutside);
+//   }, []);
+
+//   const handleLogoutClick = () => setShowLogoutModal(true);
+
+//   const confirmLogout = async () => {
+//     setShowLogoutModal(false);
 //     if (role === "Admin") await dispatch(adminLogout());
 //     else await dispatch(logoutUser());
 //     clearAll();
 //     navigate("/login", { replace: true });
 //   };
 
+//   const cancelLogout = () => setShowLogoutModal(false);
+
 //   return (
-//     <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
-//       <div className="sidebar-header">
+//     <>
+//       <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
+//         <div className="sidebar-header">
+//           {!collapsed && (
+//             <div className="sidebar-brand">
+//               <div className="sidebar-logo">R</div>
+//               <div className="sidebar-brand-text">
+//                 <span className="sidebar-brand-name">Radnus</span>
+//                 <span className="sidebar-brand-sub">DMS Platform</span>
+//               </div>
+//             </div>
+//           )}
+//           {collapsed && <div className="sidebar-logo">R</div>}
+//           <button className="sidebar-toggle" onClick={onCollapse}>
+//             {collapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
+//           </button>
+//         </div>
+
 //         {!collapsed && (
-//           <div className="sidebar-brand">
-//             <div className="sidebar-logo">R</div>
-//             <div className="sidebar-brand-text">
-//               <span className="sidebar-brand-name">Radnus</span>
-//               <span className="sidebar-brand-sub">DMS Platform</span>
+//           <div className="sidebar-user">
+//             <div className="sb-avatar">{initials}</div>
+//             <div className="sb-user-info">
+//               <span className="sb-user-name">{user?.name || "User"}</span>
+//               <span className="sb-user-role">{role}</span>
 //             </div>
 //           </div>
 //         )}
-//         {collapsed && <div className="sidebar-logo">R</div>}
-//         <button className="sidebar-toggle" onClick={onCollapse}>
-//           {collapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
-//         </button>
-//       </div>
 
-//       {!collapsed && (
-//         <div className="sidebar-user">
-//           <div className="sb-avatar">{initials}</div>
-//           <div className="sb-user-info">
-//             <span className="sb-user-name">{user?.name || "User"}</span>
-//             <span className="sb-user-role">{role}</span>
+//         <nav className="sidebar-nav">
+//           {!collapsed && <span className="nav-group-label">Navigation</span>}
+//           {navItems.map((item) => {
+//             const Icon = item.icon;
+//             return (
+//               <NavLink
+//                 key={item.path}
+//                 to={item.path}
+//                 className={({ isActive }) =>
+//                   `nav-item ${isActive ? "nav-active" : ""}`
+//                 }
+//                 title={collapsed ? item.label : ""}
+//               >
+//                 <Icon size={18} className="nav-item-icon" />
+//                 {!collapsed && (
+//                   <span className="nav-item-label">{item.label}</span>
+//                 )}
+//               </NavLink>
+//             );
+//           })}
+//         </nav>
+
+//         <div className="sidebar-footer">
+//           {!collapsed ? (
+//             <>
+//               <button
+//                 className="sidebar-footer-btn"
+//                 onClick={toggleTheme}
+//                 title="Toggle theme"
+//               >
+//                 {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+//                 <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+//               </button>
+//               <button
+//                 className="sidebar-footer-btn sidebar-logout"
+//                 onClick={handleLogoutClick}
+//                 title="Sign out"
+//               >
+//                 <LogOut size={16} />
+//                 <span>Sign Out</span>
+//               </button>
+//             </>
+//           ) : (
+//             <div className="collapsed-menu" ref={dropdownRef}>
+//               <button
+//                 className="three-dot-btn"
+//                 onClick={() => setDropdownOpen(!dropdownOpen)}
+//                 title="Menu"
+//               >
+//                 <MoreVertical size={18} />
+//               </button>
+//               {dropdownOpen && (
+//                 <div className="three-dot-dropdown">
+//                   {navItems.map((item) => {
+//                     const Icon = item.icon;
+//                     return (
+//                       <NavLink
+//                         key={item.path}
+//                         to={item.path}
+//                         className="dropdown-item"
+//                         onClick={() => setDropdownOpen(false)}
+//                         title={item.label}
+//                       >
+//                         <Icon size={16} />
+//                         <span>{item.label}</span>
+//                       </NavLink>
+//                     );
+//                   })}
+//                   <div className="dropdown-divider" />
+//                   <button className="dropdown-item" onClick={toggleTheme}>
+//                     {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+//                     <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+//                   </button>
+//                   <button className="dropdown-item" onClick={handleLogoutClick}>
+//                     <LogOut size={16} />
+//                     <span>Sign Out</span>
+//                   </button>
+//                 </div>
+//               )}
+//             </div>
+//           )}
+//         </div>
+//       </aside>
+
+//       {/* Custom Logout Modal */}
+//       {showLogoutModal && (
+//         <div className="modal-overlay" onClick={cancelLogout}>
+//           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+//             <div className="modal-header">
+//               <AlertTriangle size={24} className="modal-icon" />
+//               <h3>Confirm Sign Out</h3>
+//             </div>
+//             <div className="modal-body">
+//               <p>Are you sure you want to sign out?</p>
+//             </div>
+//             <div className="modal-footer">
+//               <button className="modal-btn modal-btn-cancel" onClick={cancelLogout}>
+//                 Cancel
+//               </button>
+//               <button className="modal-btn modal-btn-confirm" onClick={confirmLogout}>
+//                 OK
+//               </button>
+//             </div>
 //           </div>
 //         </div>
 //       )}
-
-//       <nav className="sidebar-nav">
-//         {!collapsed && <span className="nav-group-label">Navigation</span>}
-//         {navItems.map((item) => {
-//           const Icon = item.icon;
-//           return (
-//             <NavLink
-//               key={item.path}
-//               to={item.path}
-//               className={({ isActive }) =>
-//                 `nav-item ${isActive ? "nav-active" : ""}`
-//               }
-//               title={collapsed ? item.label : ""}
-//             >
-//               <Icon size={18} className="nav-item-icon" />
-//               {!collapsed && (
-//                 <span className="nav-item-label">{item.label}</span>
-//               )}
-//             </NavLink>
-//           );
-//         })}
-//       </nav>
-
-//       <div className="sidebar-footer">
-//         <button
-//           className="sidebar-footer-btn"
-//           onClick={toggleTheme}
-//           title="Toggle theme"
-//         >
-//           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-//           {!collapsed && (
-//             <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-//           )}
-//         </button>
-//         <button
-//           className="sidebar-footer-btn sidebar-logout"
-//           onClick={handleLogout}
-//           title="Sign out"
-//         >
-//           <LogOut size={16} />
-//           {!collapsed && <span>Sign Out</span>}
-//         </button>
-//       </div>
-//     </aside>
+//     </>
 //   );
 // };
 
 // export default Sidebar;
+
+//-------------------------
 
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -238,7 +324,8 @@ import {
   Settings,
   Home,
   MessageSquare,
-  MoreVertical,   // ← three‑dot icon
+  MoreVertical,
+  AlertTriangle,
 } from "lucide-react";
 
 const ROLE_NAV = {
@@ -321,7 +408,7 @@ const ROLE_NAV = {
   ],
 };
 
-const Sidebar = ({ user, collapsed, onCollapse }) => {
+const Sidebar = ({ user, collapsed, onCollapse, mobileOpen, onMobileClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -334,8 +421,8 @@ const Sidebar = ({ user, collapsed, onCollapse }) => {
     .toUpperCase()
     .slice(0, 2);
 
-  // Dropdown state & click outside
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -348,124 +435,155 @@ const Sidebar = ({ user, collapsed, onCollapse }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => setShowLogoutModal(true);
+
+  const confirmLogout = async () => {
+    setShowLogoutModal(false);
     if (role === "Admin") await dispatch(adminLogout());
     else await dispatch(logoutUser());
     clearAll();
     navigate("/login", { replace: true });
   };
 
+  const cancelLogout = () => setShowLogoutModal(false);
+
   return (
-    <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
-      <div className="sidebar-header">
+    <>
+      <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""} ${mobileOpen ? "sidebar-mobile-open" : ""}`}>
+        <div className="sidebar-header">
+          {!collapsed && (
+            <div className="sidebar-brand">
+              <div className="sidebar-logo">R</div>
+              <div className="sidebar-brand-text">
+                <span className="sidebar-brand-name">Radnus</span>
+                <span className="sidebar-brand-sub">DMS Platform</span>
+              </div>
+            </div>
+          )}
+          {collapsed && <div className="sidebar-logo">R</div>}
+          <button className="sidebar-toggle" onClick={onCollapse}>
+            {collapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
+
         {!collapsed && (
-          <div className="sidebar-brand">
-            <div className="sidebar-logo">R</div>
-            <div className="sidebar-brand-text">
-              <span className="sidebar-brand-name">Radnus</span>
-              <span className="sidebar-brand-sub">DMS Platform</span>
+          <div className="sidebar-user">
+            <div className="sb-avatar">{initials}</div>
+            <div className="sb-user-info">
+              <span className="sb-user-name">{user?.name || "User"}</span>
+              <span className="sb-user-role">{role}</span>
             </div>
           </div>
         )}
-        {collapsed && <div className="sidebar-logo">R</div>}
-        <button className="sidebar-toggle" onClick={onCollapse}>
-          {collapsed ? <Menu size={16} /> : <ChevronLeft size={16} />}
-        </button>
-      </div>
 
-      {!collapsed && (
-        <div className="sidebar-user">
-          <div className="sb-avatar">{initials}</div>
-          <div className="sb-user-info">
-            <span className="sb-user-name">{user?.name || "User"}</span>
-            <span className="sb-user-role">{role}</span>
+        <nav className="sidebar-nav">
+          {!collapsed && <span className="nav-group-label">Navigation</span>}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `nav-item ${isActive ? "nav-active" : ""}`
+                }
+                title={collapsed ? item.label : ""}
+                onClick={onMobileClose}
+              >
+                <Icon size={18} className="nav-item-icon" />
+                {!collapsed && (
+                  <span className="nav-item-label">{item.label}</span>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        <div className="sidebar-footer">
+          {!collapsed ? (
+            <>
+              <button
+                className="sidebar-footer-btn"
+                onClick={toggleTheme}
+                title="Toggle theme"
+              >
+                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+                <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+              </button>
+              <button
+                className="sidebar-footer-btn sidebar-logout"
+                onClick={handleLogoutClick}
+                title="Sign out"
+              >
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </button>
+            </>
+          ) : (
+            <div className="collapsed-menu" ref={dropdownRef}>
+              <button
+                className="three-dot-btn"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                title="Menu"
+              >
+                <MoreVertical size={18} />
+              </button>
+              {dropdownOpen && (
+                <div className="three-dot-dropdown">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className="dropdown-item"
+                        onClick={() => setDropdownOpen(false)}
+                        title={item.label}
+                      >
+                        <Icon size={16} />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                  <div className="dropdown-divider" />
+                  <button className="dropdown-item" onClick={toggleTheme}>
+                    {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+                    <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+                  </button>
+                  <button className="dropdown-item" onClick={handleLogoutClick}>
+                    <LogOut size={16} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Custom Logout Modal */}
+      {showLogoutModal && (
+        <div className="modal-overlay" onClick={cancelLogout}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <AlertTriangle size={24} className="modal-icon" />
+              <h3>Confirm Sign Out</h3>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to sign out?</p>
+            </div>
+            <div className="modal-footer">
+              <button className="modal-btn modal-btn-cancel" onClick={cancelLogout}>
+                Cancel
+              </button>
+              <button className="modal-btn modal-btn-confirm" onClick={confirmLogout}>
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}
-
-      <nav className="sidebar-nav">
-        {!collapsed && <span className="nav-group-label">Navigation</span>}
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                `nav-item ${isActive ? "nav-active" : ""}`
-              }
-              title={collapsed ? item.label : ""}
-            >
-              <Icon size={18} className="nav-item-icon" />
-              {!collapsed && (
-                <span className="nav-item-label">{item.label}</span>
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      <div className="sidebar-footer">
-        {!collapsed ? (
-          <>
-            <button
-              className="sidebar-footer-btn"
-              onClick={toggleTheme}
-              title="Toggle theme"
-            >
-              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-              <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-            </button>
-            <button
-              className="sidebar-footer-btn sidebar-logout"
-              onClick={handleLogout}
-              title="Sign out"
-            >
-              <LogOut size={16} />
-              <span>Sign Out</span>
-            </button>
-          </>
-        ) : (
-          <div className="collapsed-menu" ref={dropdownRef}>
-            <button
-              className="three-dot-btn"
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              title="Menu"
-            >
-              <MoreVertical size={18} />
-            </button>
-            {dropdownOpen && (
-              <div className="three-dot-dropdown">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      className="dropdown-item"
-                      onClick={() => setDropdownOpen(false)}
-                      title={item.label}
-                    >
-                      <Icon size={16} />
-                      <span>{item.label}</span>
-                    </NavLink>
-                  );
-                })}
-                <div className="dropdown-divider" />
-                <button className="dropdown-item" onClick={toggleTheme}>
-                  {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-                  <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-                </button>
-                <button className="dropdown-item" onClick={handleLogout}>
-                  <LogOut size={16} />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </aside>
+    </>
   );
 };
 

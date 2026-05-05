@@ -434,7 +434,7 @@ export const DistributorsPage = () => {
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    TERRITORY PAGE (unchanged)
-════════════════════════════════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════════════════════════════════ */
 export const TerritoryPage = () => {
   const dispatch = useDispatch();
   const { role } = useSelector(selectAuthState);
@@ -579,20 +579,48 @@ export const TerritoryPage = () => {
     setAssignModal(true);
   };
 
-  const handleAssign = async () => {
-    setAssignSaving(true);
-    try {
-      await dispatch(
-        assignTaluk({ id: assignTarget._id, assignedTo: assignName }),
-      ).unwrap();
-      setAssignModal(false);
-      toast.success("Assigned successfully");
-    } catch {
-      toast.error("Assign failed");
-    } finally {
-      setAssignSaving(false);
-    }
-  };
+  // const handleAssign = async () => {
+  //   setAssignSaving(true);
+  //   try {
+  //     await dispatch(
+  //       assignTaluk({ id: assignTarget._id, assignedTo: assignName }),
+  //     ).unwrap();
+  //     setAssignModal(false);
+  //     toast.success("Assigned successfully");
+  //   } catch {
+  //     toast.error("Assign failed");
+  //   } finally {
+  //     setAssignSaving(false);
+  //   }
+  // };
+
+  // --- Assign person ---
+const handleAssign = async () => {
+  if (!assignTarget) return;
+  setAssignSaving(true);
+  try {
+    // Use the same full-update endpoint as mobile EditTerritory
+    await dispatch(
+      updateTerritory({
+        id: assignTarget._id,
+        data: {
+          state: assignTarget.state,
+          district: assignTarget.district,
+          taluk: assignTarget.taluk,
+          beats: assignTarget.beats || [],
+          assignedTo: assignName.trim() || null,
+          active: true,
+        },
+      }),
+    ).unwrap();
+    setAssignModal(false);
+    toast.success("Assigned successfully");
+  } catch (err) {
+    toast.error(err || "Assign failed");
+  } finally {
+    setAssignSaving(false);
+  }
+};
 
   const openAddBeat = (item) => {
     setBeatTarget(item);
@@ -600,24 +628,55 @@ export const TerritoryPage = () => {
     setBeatModal(true);
   };
 
+  // const handleAddBeat = async () => {
+  //   if (!beatName.trim()) {
+  //     toast.error("Beat name required");
+  //     return;
+  //   }
+  //   setBeatSaving(true);
+  //   try {
+  //     await dispatch(
+  //       addBeat({ id: beatTarget._id, beat: beatName.trim() }),
+  //     ).unwrap();
+  //     setBeatModal(false);
+  //     toast.success("Beat added");
+  //   } catch {
+  //     toast.error("Failed to add beat");
+  //   } finally {
+  //     setBeatSaving(false);
+  //   }
+  // };
+
   const handleAddBeat = async () => {
-    if (!beatName.trim()) {
-      toast.error("Beat name required");
-      return;
-    }
-    setBeatSaving(true);
-    try {
-      await dispatch(
-        addBeat({ id: beatTarget._id, beat: beatName.trim() }),
-      ).unwrap();
-      setBeatModal(false);
-      toast.success("Beat added");
-    } catch {
-      toast.error("Failed to add beat");
-    } finally {
-      setBeatSaving(false);
-    }
-  };
+  if (!beatName.trim()) {
+    toast.error("Beat name required");
+    return;
+  }
+  if (!beatTarget) return;
+  setBeatSaving(true);
+  try {
+    const updatedBeats = [...(beatTarget.beats || []), beatName.trim()];
+    await dispatch(
+      updateTerritory({
+        id: beatTarget._id,
+        data: {
+          state: beatTarget.state,
+          district: beatTarget.district,
+          taluk: beatTarget.taluk,
+          beats: updatedBeats,
+          assignedTo: beatTarget.assignedTo || null,
+          active: true,
+        },
+      }),
+    ).unwrap();
+    setBeatModal(false);
+    toast.success("Beat added");
+  } catch (err) {
+    toast.error(err || "Failed to add beat");
+  } finally {
+    setBeatSaving(false);
+  }
+};
 
   const stateNames = Object.keys(data || {});
 
@@ -956,187 +1015,7 @@ export const TerritoryPage = () => {
 /* ═══════════════════════════════════════════════════════════════════════════════
    MANAGERS PAGE (unchanged)
 ════════════════════════════════════════════════════════════════════════════════ */
-// export const ManagersPage = () => {
-//   const dispatch = useDispatch();
-//   const { list, loading } = useSelector((s) => s.manager);
-//   const [search, setSearch] = useState('');
-//   const [modal, setModal] = useState(false);
-//   const [deleteId, setDeleteId] = useState(null);
-//   const [vals, setVals] = useState({ name: '', phone: '', email: '', territory: '', password: '' });
-//   const [errs, setErrs] = useState({});
-//   const [saving, setSaving] = useState(false);
 
-//   useEffect(() => {
-//     dispatch(getManagers());
-//   }, [dispatch]);
-
-//   const set = (k, v) => {
-//     setVals((p) => ({ ...p, [k]: v }));
-//     setErrs((p) => ({ ...p, [k]: '' }));
-//   };
-
-//   const handleSave = async () => {
-//     const e = {};
-//     if (!vals.name) e.name = 'Name required';
-//     if (!vals.phone) e.phone = 'Phone required';
-//     if (!vals.password || vals.password.length < 6) e.password = 'Min 6 chars';
-//     if (Object.keys(e).length) {
-//       setErrs(e);
-//       return;
-//     }
-//     setSaving(true);
-//     const fd = new FormData();
-//     Object.entries(vals).forEach(([k, v]) => v && fd.append(k, v));
-//     try {
-//       await dispatch(addManager(fd)).unwrap();
-//       setModal(false);
-//       toast.success('Manager added');
-//     } catch (e) {
-//       toast.error(e?.message || 'Failed');
-//     } finally {
-//       setSaving(false);
-//     }
-//   };
-
-//   const filtered = list.filter(
-//     (m) =>
-//       !search ||
-//       m.name?.toLowerCase().includes(search.toLowerCase()) ||
-//       m.territory?.toLowerCase().includes(search.toLowerCase())
-//   );
-
-//   const columns = [
-//     {
-//       key: 'name',
-//       label: 'Manager',
-//       render: (_, m) => (
-//         <div className="avatar-row">
-//           <Avatar name={m.name} size="sm" />
-//           <div className="avatar-row-info">
-//             <span className="avatar-row-name">{m.name}</span>
-//             <span className="avatar-row-sub">{m.email}</span>
-//           </div>
-//         </div>
-//       ),
-//     },
-//     { key: 'phone', label: 'Phone', render: (v) => v || '—' },
-//     {
-//       key: 'territory',
-//       label: 'Territory',
-//       render: (v) => (v ? <Badge variant="info">{v}</Badge> : '—'),
-//     },
-//     { key: 'status', label: 'Status', render: (v) => statusBadge(v || 'Active') },
-//     {
-//       key: '_id',
-//       label: 'Actions',
-//       render: (_, m) => (
-//         <div className="td-actions">
-//           <Button variant="secondary" size="xs" onClick={() => setDeleteId(m._id)}>
-//             Remove
-//           </Button>
-//         </div>
-//       ),
-//     },
-//   ];
-
-//   return (
-//     <div>
-//       <SectionHeader
-//         title="Marketing Managers"
-//         count={list.length}
-//         action={
-//           <Button
-//             variant="primary"
-//             size="sm"
-//             onClick={() => {
-//               setVals({ name: '', phone: '', email: '', territory: '', password: '' });
-//               setModal(true);
-//             }}
-//           >
-//             + Add Manager
-//           </Button>
-//         }
-//       />
-//       <DataTable
-//         columns={columns}
-//         data={filtered}
-//         loading={loading}
-//         searchValue={search}
-//         onSearch={setSearch}
-//         searchPlaceholder="Search managers…"
-//         emptyIcon={<UserCog size={36} />}
-//         emptyText="No managers added"
-//       />
-
-//       <Modal
-//         open={modal}
-//         onClose={() => setModal(false)}
-//         title="Add Marketing Manager"
-//         footer={
-//           <>
-//             <Button variant="ghost" onClick={() => setModal(false)}>
-//               Cancel
-//             </Button>
-//             <Button variant="primary" loading={saving} onClick={handleSave}>
-//               Add Manager
-//             </Button>
-//           </>
-//         }
-//       >
-//         <div className="form-row">
-//           <Input
-//             label="Full Name"
-//             placeholder="Manager name"
-//             value={vals.name}
-//             onChange={(e) => set('name', e.target.value)}
-//             error={errs.name}
-//           />
-//           <Input
-//             label="Phone"
-//             type="tel"
-//             placeholder="Phone"
-//             value={vals.phone}
-//             onChange={(e) => set('phone', e.target.value)}
-//             error={errs.phone}
-//           />
-//         </div>
-//         <Input
-//           label="Email"
-//           type="email"
-//           placeholder="Email"
-//           value={vals.email}
-//           onChange={(e) => set('email', e.target.value)}
-//         />
-//         <Input
-//           label="Territory"
-//           placeholder="e.g. Tamil Nadu"
-//           value={vals.territory}
-//           onChange={(e) => set('territory', e.target.value)}
-//         />
-//         <Input
-//           label="Set Password"
-//           type="password"
-//           placeholder="Min 6 chars"
-//           value={vals.password}
-//           onChange={(e) => set('password', e.target.value)}
-//           error={errs.password}
-//         />
-//       </Modal>
-
-//       <ConfirmDialog
-//         open={!!deleteId}
-//         onClose={() => setDeleteId(null)}
-//         onConfirm={async () => {
-//           await dispatch(deleteManager(deleteId)).unwrap();
-//           toast.success('Removed');
-//         }}
-//         title="Remove Manager"
-//         message="Remove this manager from the system?"
-//         confirmLabel="Remove"
-//       />
-//     </div>
-//   );
-// };
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 export const ManagersPage = () => {

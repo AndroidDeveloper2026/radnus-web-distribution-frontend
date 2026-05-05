@@ -262,10 +262,10 @@ const ProfilePage = () => {
                 <span className="profile-info-lbl">Status</span>
                 <span className="profile-info-val" style={{ color: 'var(--success)' }}>● Active</span>
               </div>
-              <div className="profile-info-row">
+              {/* <div className="profile-info-row">
                 <span className="profile-info-lbl">Platform</span>
                 <span className="profile-info-val">Radnus DMS Web v2.0</span>
-              </div>
+              </div> */}
             </div>
           </Card>
 
