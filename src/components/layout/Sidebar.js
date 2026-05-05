@@ -112,7 +112,7 @@
 //   ],
 // };
 
-// const Sidebar = ({ user, collapsed, onCollapse }) => {
+// const Sidebar = ({ user, collapsed, onCollapse, mobileOpen, onMobileClose }) => {
 //   const dispatch = useDispatch();
 //   const navigate = useNavigate();
 //   const { theme, toggleTheme } = useTheme();
@@ -153,7 +153,7 @@
 
 //   return (
 //     <>
-//       <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
+//       <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""} ${mobileOpen ? "sidebar-mobile-open" : ""}`}>
 //         <div className="sidebar-header">
 //           {!collapsed && (
 //             <div className="sidebar-brand">
@@ -192,6 +192,7 @@
 //                   `nav-item ${isActive ? "nav-active" : ""}`
 //                 }
 //                 title={collapsed ? item.label : ""}
+//                 onClick={onMobileClose}
 //               >
 //                 <Icon size={18} className="nav-item-icon" />
 //                 {!collapsed && (
@@ -292,7 +293,7 @@
 
 // export default Sidebar;
 
-//-------------------------
+//------------------------------
 
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -468,7 +469,11 @@ const Sidebar = ({ user, collapsed, onCollapse, mobileOpen, onMobileClose }) => 
 
         {!collapsed && (
           <div className="sidebar-user">
-            <div className="sb-avatar">{initials}</div>
+            <div className="sb-avatar">
+              {user?.profileImage || user?.photo
+                ? <img src={user.profileImage || user.photo} alt={user?.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : initials}
+            </div>
             <div className="sb-user-info">
               <span className="sb-user-name">{user?.name || "User"}</span>
               <span className="sb-user-role">{role}</span>

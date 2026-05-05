@@ -1,9 +1,13 @@
 // import React from 'react';
-// import { Bell } from 'lucide-react';
+// import { Bell, Menu } from 'lucide-react';
 // import { Avatar } from '../ui/UI';
 
-// const Topbar = ({ title, user }) => (
+// const Topbar = ({ title, user, onMobileMenuToggle }) => (
 //   <header className="topbar">
+//     {/* Hamburger — visible only on mobile */}
+//     <button className="topbar-hamburger" onClick={onMobileMenuToggle} aria-label="Open menu">
+//       <Menu size={20} />
+//     </button>
 //     <h1 className="topbar-title">{title}</h1>
 //     <div className="topbar-right">
 //       <button className="topbar-notif">
@@ -23,7 +27,7 @@
 
 // export default Topbar;
 
-//----------------------------
+//------------------------
 
 import React from 'react';
 import { Bell, Menu } from 'lucide-react';
@@ -42,8 +46,13 @@ const Topbar = ({ title, user, onMobileMenuToggle }) => (
         <span className="notif-badge" />
       </button>
       <div className="topbar-user">
-        <Avatar name={user?.name || 'User'} size="sm" />
-        <div className="topbar-user-info">
+        <Avatar
+          name={user?.name || 'User'}
+          src={user?.profileImage || user?.photo || null}
+          size="sm"
+        />
+        {/* Hide name & role on mobile to prevent cramping */}
+        <div className="topbar-user-info topbar-user-info--desktop">
           <span className="topbar-user-name">{user?.name || 'User'}</span>
           <span className="topbar-user-role">{user?.role || ''}</span>
         </div>
