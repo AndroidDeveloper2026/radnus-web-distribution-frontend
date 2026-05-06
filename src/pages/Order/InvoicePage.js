@@ -915,16 +915,7 @@ const InvoicePage = () => {
             <p style={{ ...S.text, margin: "2px 0", fontSize: "0.75rem" }}>
               E-Mail: sundar12134@gmail.com
             </p>
-            <p
-              style={{
-                ...S.text,
-                margin: "2px 0",
-                fontWeight: "700",
-                fontSize: "0.8rem",
-              }}
-            >
-              GST: 34AAHFR8679B
-            </p>
+            
           </div>
 
           {/* Title */}
