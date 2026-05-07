@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../../services/features/products/productSlice';
-import { fetchInvoices } from '../../services/features/invoice/invoiceSlice';
+// ❌ No need to fetch invoices for stock calculation
+// import { fetchInvoices } from '../../services/features/invoice/invoiceSlice';
 import { useTheme } from '../../context/ThemeContext';
 import './OrderCartPage.css';
 
@@ -82,7 +83,8 @@ const OrderCartPage = () => {
   const isDark = theme === 'dark';
 
   const products = useSelector(state => state.products.list);
-  const invoices = useSelector(state => state.invoice.data);
+  // ❌ No invoices selector needed
+  // const invoices = useSelector(state => state.invoice.data);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState([]);
@@ -92,39 +94,28 @@ const OrderCartPage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const promises = [];
-        if (!products?.length) promises.push(dispatch(fetchProducts()));
-        if (!invoices?.length) promises.push(dispatch(fetchInvoices({ filter: 'all' })));
-        if (promises.length) await Promise.all(promises);
+        // ✅ Only fetch products – invoices are NOT needed for stock
+        if (!products?.length) {
+          await dispatch(fetchProducts());
+        }
       } catch (error) {
-        console.error('Failed to load data:', error);
+        console.error('Failed to load products:', error);
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, [dispatch, products, invoices]);
+  }, [dispatch, products]);
 
-  const soldMap = useMemo(() => {
-    const map = new Map();
-    if (!invoices) return map;
-    for (const inv of invoices) {
-      if (inv.status === 'draft') continue;
-      for (const it of inv.items || []) {
-        const pid = it.productId;
-        const qty = Number(it.qty) || 0;
-        map.set(pid, (map.get(pid) || 0) + qty);
-      }
-    }
-    return map;
-  }, [invoices]);
+  // ✅ No soldMap – we trust product.moq as the current stock
 
   useEffect(() => {
     if (!products?.length) return;
     if (hasInitialized.current) return;
+
+    // ✅ Directly use product.moq as current stock (backend already reduced it)
     const newCart = products.map(p => {
-      const moq = Number(p.moq) || 1;
-      const sold = soldMap.get(p._id) || 0;
+      const currentStock = Math.max(0, Number(p.moq) || 0);
       return {
         id: p._id,
         name: p.name ?? 'Unnamed',
@@ -134,14 +125,14 @@ const OrderCartPage = () => {
         walkinPrice: Number(p.walkinPrice) || 0,
         mrp: Number(p.mrp) || 0,
         qty: 0,
-        moq,
-        currentStock: Math.max(0, moq - sold),
+        moq: currentStock,      // store current stock for reference (optional)
+        currentStock: currentStock,
         image: p.image ?? null,
       };
     });
     setCart(newCart);
     hasInitialized.current = true;
-  }, [products, soldMap]);
+  }, [products]); // ✅ No invoices dependency
 
   const updateQty = useCallback((id, type) => {
     setCart(prev => {

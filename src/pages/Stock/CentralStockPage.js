@@ -19,7 +19,7 @@ import {
   Loader,
 } from 'lucide-react';
 
-// Helper: format currency
+// Helper functions (unchanged)
 const formatValue = (num) => {
   const value = Number(num);
   if (isNaN(value) || value === undefined) return '₹0';
@@ -28,7 +28,6 @@ const formatValue = (num) => {
   return `₹${value.toFixed(2)}`;
 };
 
-// Helper: parse date from various formats
 const parseDate = (dateValue) => {
   if (!dateValue) return new Date();
   if (dateValue instanceof Date && !isNaN(dateValue)) return dateValue;
@@ -43,7 +42,6 @@ const parseDate = (dateValue) => {
   return new Date();
 };
 
-// Helper: get numeric value (handles space‑suffixed keys)
 const getNum = (obj, key, fallback = 0) => {
   if (obj?.[key] !== undefined && obj[key] !== null) {
     const val = Number(obj[key]);
@@ -71,7 +69,6 @@ const getId = (obj) => {
   return obj._id || obj.id;
 };
 
-// Date filters
 const isSameDay = (d1, d2) =>
   d1.getDate() === d2.getDate() &&
   d1.getMonth() === d2.getMonth() &&
@@ -147,7 +144,7 @@ const CentralStockPage = () => {
     setRefreshing(false);
   };
 
-  // Compute current stock from products minus invoice quantities
+  // ✅ FIX: Use moq as current stock – no subtraction of invoices
   const stockMap = useMemo(() => {
     if (!products.length) return {};
 
@@ -156,8 +153,8 @@ const CentralStockPage = () => {
       const pid = getId(product._id);
       stock[pid] = {
         ...product,
-        currentStock: getNum(product, 'stock') || getNum(product, 'moq') || 0,
-        totalOutward: 0,
+        currentStock: Math.max(0, getNum(product, 'moq', 0)), // moq is the live stock
+        totalOutward: 0, // not used anymore but kept for consistency
         walkinPrice: getNum(product, 'walkinPrice'),
         moq: getNum(product, 'moq'),
         name: getStr(product, 'name'),
@@ -167,21 +164,9 @@ const CentralStockPage = () => {
       };
     });
 
-    invoices.forEach(invoice => {
-      (invoice.items || []).forEach(item => {
-        const pid = getId(item.productId);
-        if (stock[pid]) {
-          stock[pid].currentStock -= getNum(item, 'qty');
-          stock[pid].totalOutward += getNum(item, 'qty');
-        }
-      });
-    });
-
-    Object.keys(stock).forEach(id => {
-      stock[id].currentStock = Math.max(0, stock[id].currentStock);
-    });
+    // No subtraction of invoice items – backend already reduced moq
     return stock;
-  }, [products, invoices]);
+  }, [products]); // ✅ No invoices dependency
 
   // Overview data (product list with current stock)
   const overviewData = useMemo(() => {
@@ -197,13 +182,13 @@ const CentralStockPage = () => {
     }));
   }, [stockMap]);
 
-  // Inward transactions (product additions)
+  // Inward transactions – unchanged (product creation events)
   const inwardData = useMemo(() => {
     if (!products.length) return [];
     return products
       .map(product => {
         const createdAt = parseDate(product.createdAt);
-        const qty = getNum(product, 'moq');
+        const qty = getNum(product, 'moq'); // initial stock added
         const price = getNum(product, 'walkinPrice');
         return {
           id: `inward_${getId(product._id)}`,
@@ -222,7 +207,7 @@ const CentralStockPage = () => {
       .sort((a, b) => b._createdAt - a._createdAt);
   }, [products]);
 
-  // Outward transactions (sales from invoices)
+  // Outward transactions – unchanged (invoice events)
   const outwardData = useMemo(() => {
     if (!invoices.length) return [];
     const outward = [];
@@ -387,11 +372,7 @@ const CentralStockPage = () => {
                       <strong>{product.qty} units</strong>
                     </div>
                     <div className="detail-row">
-                      <span>MOQ:</span>
-                      <strong>{product.moq || 0} units</strong>
-                    </div>
-                    <div className="detail-row">
-                      <span>Stock Value:</span>
+                      <span>Total Stock Value:</span>
                       <strong>{formatValue((product.qty || 0) * (product.walkinPrice || 0))}</strong>
                     </div>
                     <div className="detail-row">

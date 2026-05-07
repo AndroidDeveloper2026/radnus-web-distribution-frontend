@@ -30,6 +30,8 @@ import {
   MessageSquare,
   MoreVertical,
   AlertTriangle,
+  RotateCcw,
+  PackageX,
 } from "lucide-react";
 
 const ROLE_NAV = {
@@ -47,6 +49,8 @@ const ROLE_NAV = {
     { path: "/central-stock", label: "Central Stock", icon: Package },
     { path: "/activity-logs", label: "Activity Log", icon: FileText },
     { path: "/admin-feedback", label: "Admin Feedback", icon: MessageSquare },
+    { path: "/sales-return", label: "Sales Return", icon: RotateCcw },
+    { path: "/purchase-return", label: "Purchase Return", icon: PackageX },
     { path: "/reports", label: "Reports", icon: BarChart3 },
     { path: "/profile", label: "Profile", icon: Settings },
   ],
@@ -59,6 +63,8 @@ const ROLE_NAV = {
     { path: "/stock-visibility", label: "Stock Visibility", icon: Package },
     { path: "/central-stock", label: "Central Stock", icon: Package },
     { path: "/feedback", label: "Feedback", icon: Star },
+    { path: "/sales-return", label: "Sales Return", icon: RotateCcw },
+    { path: "/purchase-return", label: "Purchase Return", icon: PackageX },
     { path: "/reports", label: "Reports", icon: BarChart3 },
     { path: "/profile", label: "Profile", icon: Settings },
   ],
@@ -71,6 +77,8 @@ const ROLE_NAV = {
     { path: "/invoices", label: "Invoices", icon: FileText },
     { path: "/stock-visibility", label: "Stock Visibility", icon: Package },
     { path: "/central-stock", label: "Central Stock", icon: Package },
+    { path: "/sales-return", label: "Sales Return", icon: RotateCcw },
+    { path: "/purchase-return", label: "Purchase Return", icon: PackageX },
     { path: "/reports", label: "Reports", icon: BarChart3 },
     { path: "/profile", label: "Profile", icon: Settings },
   ],

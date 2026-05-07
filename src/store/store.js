@@ -16,6 +16,7 @@ import invoiceReducer from '../services/features/invoice/invoiceSlice';
 import activityReducer from '../services/features/activity/activitySlice';
 import feedbackReducer from '../services/features/retailer/feedbackSlice';
 import profileReducer from '../services/features/profile/profileSlice';
+import returnsReducer from '../services/features/returns/returnsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -35,5 +36,6 @@ export const store = configureStore({
     activity: activityReducer,
     feedback: feedbackReducer,
     profile: profileReducer,
+    returns: returnsReducer,
   },
 });

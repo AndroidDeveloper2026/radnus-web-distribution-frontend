@@ -46,6 +46,8 @@ import InvoicePage from "./pages/Order/InvoicePage";
 import ActivityLogPage from "./pages/ActivityLog/ActivityLogPage";
 import FeedbackPage from "./pages/Feedback/FeedbackPage";
 import AdminFeedbackPage from "./pages/Feedback/AdminFeedbackPage";
+import SalesReturnPage from "./pages/Returns/SalesReturnPage";
+import PurchaseReturnPage from "./pages/Returns/PurchaseReturnPage";
 import {
   DistributorsPage,
   TerritoryPage,
@@ -77,7 +79,9 @@ const ROLE_ROUTES = {
     "order-success",
     "invoice",
     "activity-logs",
-    "admin-feedback", 
+    "admin-feedback",
+    "sales-return",
+    "purchase-return",
   ],
   Radnus: [
     "dashboard",
@@ -94,7 +98,9 @@ const ROLE_ROUTES = {
     "order-cart",
     "order-success",
     "invoice",
-    "feedback", 
+    "feedback",
+    "sales-return",
+    "purchase-return",
   ],
   Distributor: [
     "dashboard",
@@ -109,6 +115,8 @@ const ROLE_ROUTES = {
     "order-cart",
     "order-success",
     "invoice",
+    "sales-return",
+    "purchase-return",
   ],
   MarketingManager: [
     "dashboard",
@@ -516,6 +524,26 @@ const AppRouterInner = () => {
               <ProtectedRoute>
                 <RolePage routeKey="admin-feedback">
                   <AdminFeedbackPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sales-return"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="sales-return">
+                  <SalesReturnPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/purchase-return"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="purchase-return">
+                  <PurchaseReturnPage />
                 </RolePage>
               </ProtectedRoute>
             }

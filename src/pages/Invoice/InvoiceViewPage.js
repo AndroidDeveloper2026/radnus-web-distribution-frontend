@@ -324,7 +324,7 @@ const InvoiceViewPage = () => {
   };
 
   // ─── Download / Print handler ───
-  const handleDownload = () => {
+  const handlePrint = () => {
     setDownloading(true);
     const printWindow = window.open('', '_blank');
     printWindow.document.write(generateInvoiceHTML());
@@ -332,6 +332,50 @@ const InvoiceViewPage = () => {
     printWindow.onload = () => printWindow.print(); // ensure it prints after the page is loaded
     setDownloading(false);
   };
+
+  // ─── Download PDF handler ───
+const handleDownload = async () => {
+  try {
+    setDownloading(true);
+
+    // Create hidden container
+    const element = document.createElement('div');
+    element.innerHTML = generateInvoiceHTML();
+
+    // Append temporarily
+    document.body.appendChild(element);
+
+    // Import html2pdf dynamically
+    const html2pdf = (await import('html2pdf.js')).default;
+
+    // PDF options
+    const opt = {
+      margin: 0.3,
+      filename: `${invoiceNumber}.pdf`,
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+      },
+      jsPDF: {
+        unit: 'in',
+        format: 'a4',
+        orientation: 'portrait',
+      },
+    };
+
+    // Download directly
+    await html2pdf().set(opt).from(element).save();
+
+    // Cleanup
+    document.body.removeChild(element);
+
+  } catch (error) {
+    console.error('PDF download failed:', error);
+  } finally {
+    setDownloading(false);
+  }
+};
 
   // ─── Page Render ───
   return (
@@ -420,6 +464,9 @@ const InvoiceViewPage = () => {
 
         <button className="download-btn" onClick={handleDownload} disabled={downloading}>
           <Download size={18} /> {downloading ? 'Preparing...' : 'Download PDF'}
+        </button>
+        <button className="download-btn" onClick={handlePrint} disabled={downloading}>
+          <Download size={18} /> {downloading ? 'Preparing...' : 'Print Invoice Bill'}
         </button>
       </div>
     </div>
