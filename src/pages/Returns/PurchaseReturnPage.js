@@ -22,6 +22,8 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  Download,
+  Printer,
 } from 'lucide-react';
 
 // ─── Date helpers ─────────────────────────────────────────────────
@@ -36,14 +38,162 @@ const isThisMonth = (d) => {
   return new Date(d) >= new Date(now.getFullYear(), now.getMonth(), 1);
 };
 
-// ─── Return Card (unchanged, but included for completeness) ──────
+// ─── PurchaseReturnCard ─────────────────
 const PurchaseReturnCard = React.memo(({ ret, onDelete, isAdmin }) => {
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  const toggleExpand = useCallback(() => {
+    setExpanded(prev => !prev);
+  }, []);
+
+  const generatePurchaseReturnHTML = () => {
+    const amountInWords = (num) => {
+      const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+      const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+      if (num === 0) return 'Zero';
+      if (num < 20) return ones[num];
+      if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? ' ' + ones[num % 10] : '');
+      if (num < 1000) return ones[Math.floor(num / 100)] + ' Hundred' + (num % 100 ? ' ' + amountInWords(num % 100) : '');
+      if (num < 100000) return amountInWords(Math.floor(num / 1000)) + ' Thousand' + (num % 1000 ? ' ' + amountInWords(num % 1000) : '');
+      return amountInWords(Math.floor(num / 100000)) + ' Lakh' + (num % 100000 ? ' ' + amountInWords(num % 100000) : '');
+    };
+    const totalWords = `INR ${amountInWords(ret.totalAmount)} Only`;
+    const dateStr = ret.createdAt ? new Date(ret.createdAt).toDateString() : '';
+
+    let itemsRows = '';
+    (ret.items || []).forEach((item, idx) => {
+      itemsRows += `
+        <tr>
+          <td style="text-align:center;padding:6px;border:1px solid #000">${idx + 1}</td>
+          <td style="padding:6px;border:1px solid #000">${item.name}</td>
+          <td style="text-align:center;padding:6px;border:1px solid #000">-</td>
+          <td style="text-align:center;padding:6px;border:1px solid #000">${item.qty} NOS</td>
+          <td style="text-align:right;padding:6px;border:1px solid #000">${item.price}</td>
+          <td style="text-align:center;padding:6px;border:1px solid #000">NOS</td>
+          <td style="text-align:right;padding:6px;border:1px solid #000">₹${(item.qty * item.price).toFixed(2)}</td>
+        </tr>`;
+    });
+    const totalQty = (ret.items || []).reduce((sum, i) => sum + i.qty, 0);
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8"/>
+        <base href="about:blank">
+        <title>Purchase Return ${ret.returnNumber || ''}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; background: #fff; color: #000; padding: 0; margin: 0; }
+          @page { margin: 10mm; size: A4 portrait; }
+          .invoice-outer { background: #fff; color: #000; padding: 1rem; border: 1px solid #000 !important; }
+          p { margin: 2px 0; }
+          .items-table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; font-size: 0.75rem; }
+          .items-table th { border: 1px solid #000; padding: 0.45rem 0.4rem; background: #f0f0f0 !important; color: #000 !important; font-weight: 800; font-size: 0.72rem; }
+          .items-table td { border: 1px solid #000; padding: 0.35rem 0.4rem; background: #fff; color: #000; }
+          .items-table tbody tr:nth-child(even) td { background: #f5f5f5 !important; }
+          .meta-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+          .meta-table td { border: 1px solid #000; padding: 0.25rem 0.35rem; background: #fff; color: #000; }
+          * { color: #000 !important; }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-outer">
+          <div style="text-align:center; border-bottom:1px solid #000; padding-bottom:0.5rem;">
+            <h2 style="margin:0; font-size:1.1rem;">RADNUS COMMUNICATION</h2>
+            <p style="font-size:0.75rem;">No.242/44, MG Road, Sinnaya Plaza, Near Fish Market</p>
+            <p style="font-size:0.75rem;">Puducherry - 605001 &nbsp;|&nbsp; State: Puducherry, Code: 605001</p>
+            <p style="font-size:0.75rem;">E-Mail: sundar12134@gmail.com</p>
+          </div>
+          <div style="text-align:center; font-size:1rem; font-weight:bold; padding:0.5rem; border-bottom:1px solid #000;">PURCHASE RETURN / DEBIT NOTE</div>
+          <div style="display:flex; border-bottom:1px solid #000;">
+            <div style="width:50%; padding:0.5rem; border-right:1px solid #000;">
+              <div style="font-weight:700; font-size:0.95rem; margin-bottom:4px;">Supplier Details</div>
+              <p style="font-size:0.78rem;">${ret.supplierName || ''}</p>
+              ${ret.referencePO ? `<p style="font-size:0.78rem;">Ref PO: ${ret.referencePO}</p>` : ''}
+              ${ret.reason ? `<p style="font-size:0.78rem;">Reason: ${ret.reason}</p>` : ''}
+            </div>
+            <div style="width:50%; padding:0.5rem;">
+              <table class="meta-table">
+                <tr><td style="font-weight:600;">Return No.</td><td>${ret.returnNumber || ''}</td></tr>
+                <tr><td style="font-weight:600;">Date</td><td>${dateStr}</td></tr>
+                <tr><td style="font-weight:600;">Biller</td><td>${ret.billerName || ''}</td></tr>
+              </table>
+            </div>
+          </div>
+          <table class="items-table">
+            <thead>
+              <tr><th>SL NO.</th><th>DESCRIPTION</th><th>HSN</th><th>QTY</th><th>RATE</th><th>PER</th><th>AMOUNT</th></tr>
+            </thead>
+            <tbody>
+              ${itemsRows}
+              <tr>
+                <td style="background:#e8e8e8; font-weight:700; border-top:2px solid #000;"></td>
+                <td style="background:#e8e8e8; font-weight:700; border-top:2px solid #000;">Total</td>
+                <td style="background:#e8e8e8; font-weight:700; border-top:2px solid #000;"></td>
+                <td style="background:#e8e8e8; font-weight:700; border-top:2px solid #000; text-align:center">${totalQty} NOS</td>
+                <td style="background:#e8e8e8; font-weight:700; border-top:2px solid #000;"></td>
+                <td style="background:#e8e8e8; font-weight:700; border-top:2px solid #000;"></td>
+                <td style="background:#e8e8e8; font-weight:700; border-top:2px solid #000; text-align:right">₹${ret.totalAmount.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="padding:0.5rem; border-bottom:1px solid #000;">
+            <strong>Amount in Words:</strong><br/>${totalWords}
+          </div>
+          <div style="padding:0.5rem; border-bottom:1px solid #000;">
+            <strong>Declaration</strong><br/>
+            <span style="font-size:0.78rem;">We declare that this debit note is issued against the goods returned to the supplier and all particulars are true and correct.</span>
+          </div>
+          <div style="display:flex; padding:0.5rem; border-bottom:1px solid #000;">
+            <div style="width:60%;">E. &amp; O.E</div>
+            <div style="width:40%; text-align:right;">
+              <strong>for RADNUS COMMUNICATION</strong>
+              <div style="margin-top:2rem; border-top:1px solid #000;"></div>
+              <span>Authorised Signatory</span>
+            </div>
+          </div>
+          <div style="text-align:center; padding:0.5rem; font-size:0.7rem;">This is a Computer Generated Document</div>
+        </div>
+      </body>
+      </html>`;
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      setDownloading(true);
+      const element = document.createElement('div');
+      element.innerHTML = generatePurchaseReturnHTML();
+      document.body.appendChild(element);
+      const html2pdf = (await import('html2pdf.js')).default;
+      const opt = {
+        margin: 0.3,
+        filename: `${ret.returnNumber || 'purchase-return'}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+      };
+      await html2pdf().set(opt).from(element).save();
+      document.body.removeChild(element);
+    } catch (error) {
+      console.error('PDF failed:', error);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(generatePurchaseReturnHTML());
+    printWindow.document.close();
+    printWindow.onload = () => printWindow.print();
+  };
 
   return (
     <div className="return-card return-card-purchase">
-      <div className="return-card-header" onClick={() => setExpanded((p) => !p)}>
+      <div className="return-card-header" onClick={toggleExpand}>
         <div className="return-card-meta">
           <div className="return-meta-row">
             <div className="icon-badge" style={{ backgroundColor: '#E8F5E9' }}>
@@ -64,10 +214,20 @@ const PurchaseReturnCard = React.memo(({ ret, onDelete, isAdmin }) => {
             <span className="return-ref">{ret.referencePO || ret.purchaseOrderNo || '—'}</span>
           </div>
         </div>
+        
+        {/* Fixed Layout: Amount on top, Badge and Toggle side-by-side */}
         <div className="return-card-right">
           <span className="return-amount return-amount-purchase">₹{ret.totalAmount}</span>
-          <span className="return-badge return-badge-purchase">Purchase Return</span>
-          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          <div className="return-badge-row">
+            <span className="return-badge return-badge-purchase">Purchase Return</span>
+            <div 
+              className="toggle-chevron" 
+              onClick={(e) => { e.stopPropagation(); toggleExpand(); }}
+              aria-label={expanded ? 'Collapse' : 'Expand'}
+            >
+              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -105,8 +265,46 @@ const PurchaseReturnCard = React.memo(({ ret, onDelete, isAdmin }) => {
             <span className="return-total return-total-purchase">₹{ret.totalAmount}</span>
           </div>
 
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleDownloadPDF}
+              disabled={downloading}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                background: '#2E7D32',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '0.4rem',
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+              }}
+            >
+              <Download size={14} /> {downloading ? 'Preparing...' : 'Download PDF'}
+            </button>
+            <button
+              onClick={handlePrint}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                background: '#1565C0',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '0.4rem',
+                padding: '0.4rem 0.8rem',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+              }}
+            >
+              <Printer size={14} /> Print
+            </button>
+          </div>
+
           {isAdmin && (
-            <div className="return-actions">
+            <div className="return-actions" style={{ marginTop: '0.75rem' }}>
               {!confirmDelete ? (
                 <button className="btn-delete" onClick={() => setConfirmDelete(true)}>
                   <Trash2 size={14} /> Delete
@@ -114,8 +312,12 @@ const PurchaseReturnCard = React.memo(({ ret, onDelete, isAdmin }) => {
               ) : (
                 <div className="confirm-delete">
                   <span>Delete this return?</span>
-                  <button className="btn-confirm-del" onClick={() => onDelete(ret._id)}>Yes, Delete</button>
-                  <button className="btn-cancel-del" onClick={() => setConfirmDelete(false)}>Cancel</button>
+                  <button className="btn-confirm-del" onClick={() => onDelete(ret._id)}>
+                    Yes, Delete
+                  </button>
+                  <button className="btn-cancel-del" onClick={() => setConfirmDelete(false)}>
+                    Cancel
+                  </button>
                 </div>
               )}
             </div>
@@ -126,11 +328,11 @@ const PurchaseReturnCard = React.memo(({ ret, onDelete, isAdmin }) => {
   );
 });
 
-// ─── Create Return Modal (UPDATED – product selector added) ──────────
+// ─── CreatePurchaseReturnModal ─────
 const emptyItem = () => ({ productId: '', name: '', qty: '', price: '' });
 
 const CreatePurchaseReturnModal = ({ onClose, onSubmit, submitting, error }) => {
-  const products = useSelector(state => state.products.list);
+  const products = useSelector((state) => state.products.list);
 
   const [form, setForm] = useState({
     supplierName: '',
@@ -140,8 +342,7 @@ const CreatePurchaseReturnModal = ({ onClose, onSubmit, submitting, error }) => 
   });
 
   const addItem = () => setForm((f) => ({ ...f, items: [...f.items, emptyItem()] }));
-  const removeItem = (idx) =>
-    setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+  const removeItem = (idx) => setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
   const updateItem = (idx, field, value) =>
     setForm((f) => {
       const items = [...f.items];
@@ -174,8 +375,12 @@ const CreatePurchaseReturnModal = ({ onClose, onSubmit, submitting, error }) => 
     <div className="modal-overlay" onClick={onClose}>
       <div className="return-modal return-modal-purchase" onClick={(e) => e.stopPropagation()}>
         <div className="modal-top">
-          <h3><PackageX size={18} /> New Purchase Return</h3>
-          <button className="modal-close" onClick={onClose}><X size={18} /></button>
+          <h3>
+            <PackageX size={18} /> New Purchase Return
+          </h3>
+          <button className="modal-close" onClick={onClose}>
+            <X size={18} />
+          </button>
         </div>
 
         <div className="modal-fields">
@@ -210,20 +415,18 @@ const CreatePurchaseReturnModal = ({ onClose, onSubmit, submitting, error }) => 
 
           {form.items.map((item, idx) => (
             <div className="item-row" key={idx}>
-              {/* Product selector (replaces plain name input) */}
               <select
                 className="return-input item-name"
                 value={item.productId}
                 onChange={(e) => {
-                  const product = products.find(p => p._id === e.target.value);
+                  const product = products.find((p) => p._id === e.target.value);
                   updateItem(idx, 'productId', product?._id || '');
                   updateItem(idx, 'name', product?.name || '');
-                  // Pre‑fill price (using walkinPrice, change if needed)
                   updateItem(idx, 'price', product?.walkinPrice || 0);
                 }}
               >
                 <option value="">Select product</option>
-                {products.map(p => (
+                {products.map((p) => (
                   <option key={p._id} value={p._id}>
                     {p.name} (SKU: {p.sku} | Stock: {p.moq})
                   </option>
@@ -267,7 +470,11 @@ const CreatePurchaseReturnModal = ({ onClose, onSubmit, submitting, error }) => 
 
         <div className="modal-footer-btns">
           <button className="btn-cancel" onClick={onClose}>Cancel</button>
-          <button className="btn-submit btn-submit-purchase" onClick={handleSubmit} disabled={submitting}>
+          <button
+            className="btn-submit btn-submit-purchase"
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
             {submitting ? <Loader size={14} className="spin" /> : <PackageX size={14} />}
             {submitting ? 'Submitting...' : 'Create Return'}
           </button>
@@ -277,7 +484,7 @@ const CreatePurchaseReturnModal = ({ onClose, onSubmit, submitting, error }) => 
   );
 };
 
-// ─── Main Page ────────────────────────────────────────────────────
+// ─── Main Page ─────────────────────────────────────
 const PurchaseReturnPage = () => {
   const dispatch = useDispatch();
   const { theme } = useTheme();
@@ -313,10 +520,7 @@ const PurchaseReturnPage = () => {
     [dispatch, billerName]
   );
 
-  const handleDelete = useCallback(
-    (id) => dispatch(deletePurchaseReturn(id)),
-    [dispatch]
-  );
+  const handleDelete = useCallback((id) => dispatch(deletePurchaseReturn(id)), [dispatch]);
 
   const filtered = useMemo(() => {
     let data = purchaseReturns;
