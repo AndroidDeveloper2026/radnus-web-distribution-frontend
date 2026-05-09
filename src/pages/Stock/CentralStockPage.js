@@ -1,4 +1,3 @@
-// src/pages/Stock/CentralStockPage.js
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '../../services/features/products/productSlice';
@@ -144,19 +143,36 @@ const CentralStockPage = () => {
     setRefreshing(false);
   };
 
-  // ✅ FIX: Use moq as current stock – no subtraction of invoices
+  // ✅ LIVE STOCK CALCULATION – subtract sold quantities from invoices
   const stockMap = useMemo(() => {
     if (!products.length) return {};
 
+    // First create a map of productId -> total sold quantity
+    const soldMap = {};
+    invoices.forEach(invoice => {
+      (invoice.items || []).forEach(item => {
+        const productId = getId(item.productId);
+        if (productId) {
+          const qty = getNum(item, 'qty', 0);
+          soldMap[productId] = (soldMap[productId] || 0) + qty;
+        }
+      });
+    });
+
+    // Build stock map with current stock = moq - sold
     const stock = {};
     products.forEach(product => {
       const pid = getId(product._id);
+      const moq = getNum(product, 'moq', 0);
+      const sold = soldMap[pid] || 0;
+      const currentStock = Math.max(0, moq - sold);
+
       stock[pid] = {
         ...product,
-        currentStock: Math.max(0, getNum(product, 'moq', 0)), // moq is the live stock
-        totalOutward: 0, // not used anymore but kept for consistency
+        currentStock,
+        totalOutward: sold,
         walkinPrice: getNum(product, 'walkinPrice'),
-        moq: getNum(product, 'moq'),
+        moq,
         name: getStr(product, 'name'),
         sku: getStr(product, 'sku'),
         rackNo: getStr(product, 'rackNo'),
@@ -164,11 +180,10 @@ const CentralStockPage = () => {
       };
     });
 
-    // No subtraction of invoice items – backend already reduced moq
     return stock;
-  }, [products]); // ✅ No invoices dependency
+  }, [products, invoices]); // ✅ depends on both products and invoices
 
-  // Overview data (product list with current stock)
+  // Overview data (product list with live current stock)
   const overviewData = useMemo(() => {
     return Object.values(stockMap).map(item => ({
       id: getId(item._id),
@@ -182,7 +197,7 @@ const CentralStockPage = () => {
     }));
   }, [stockMap]);
 
-  // Inward transactions – unchanged (product creation events)
+  // Inward transactions – product creation (initial stock addition)
   const inwardData = useMemo(() => {
     if (!products.length) return [];
     return products
@@ -207,7 +222,7 @@ const CentralStockPage = () => {
       .sort((a, b) => b._createdAt - a._createdAt);
   }, [products]);
 
-  // Outward transactions – unchanged (invoice events)
+  // Outward transactions – invoice items (sales)
   const outwardData = useMemo(() => {
     if (!invoices.length) return [];
     const outward = [];

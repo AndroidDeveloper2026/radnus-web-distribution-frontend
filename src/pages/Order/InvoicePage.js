@@ -5,10 +5,6 @@ import { useTheme } from "../../context/ThemeContext";
 import { Printer, FileText } from "lucide-react";
 import "./InvoicePage.css";
 
-// ============================================================
-// Shared inline styles – hardcoded so the invoice never uses
-// theme colours, even before the force‑inline pass.
-// ============================================================
 const S = {
   wrap: {
     background: "#ffffff",

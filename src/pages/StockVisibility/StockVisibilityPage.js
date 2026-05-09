@@ -1,14 +1,14 @@
-// src/pages/StockVisibility/StockVisibilityPage.js
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '../../services/features/products/productSlice';
+import { fetchInvoices } from '../../services/features/invoice/invoiceSlice';
 import { useTheme } from '../../context/ThemeContext';
 import './StockVisibilityPage.css';
-
 import { Package, CheckCircle, AlertTriangle, XCircle, RefreshCw, Loader } from 'lucide-react';
 
-const LOW_STOCK_THRESHOLD = 10; // products with stock ≤ this are considered "Low"
+const LOW_STOCK_THRESHOLD = 10;
 
+// Helper: get numeric value safely
 const getNum = (obj, key, fallback = 0) => {
   if (obj?.[key] !== undefined && obj?.[key] !== null) {
     const val = Number(obj[key]);
@@ -36,14 +36,6 @@ const getId = (obj) => {
   return obj._id || obj.id;
 };
 
-
-
-const getStockStatus = (currentStock) => {
-  if (currentStock <= 0) return 'OUT_OF_STOCK';
-  if (currentStock <= LOW_STOCK_THRESHOLD) return 'LOW_STOCK';
-  return 'IN_STOCK';
-};
-
 const SummaryChip = ({ label, count, color, bg, active, onPress }) => (
   <button
     className={`summary-chip ${active ? 'active' : ''}`}
@@ -64,9 +56,13 @@ const StockVisibilityPage = () => {
   const [activeFilter, setActiveFilter] = useState(null);
 
   const { list: products = [], loading: productsLoading } = useSelector(state => state.products) || {};
+  const { data: invoices = [], loading: invoicesLoading } = useSelector(state => state.invoice) || {};
 
   const loadData = useCallback(async () => {
-    await dispatch(fetchProducts());
+    await Promise.all([
+      dispatch(fetchProducts()),
+      dispatch(fetchInvoices('all'))
+    ]);
   }, [dispatch]);
 
   useEffect(() => {
@@ -79,46 +75,59 @@ const StockVisibilityPage = () => {
     setRefreshing(false);
   };
 
+  // 📊 Compute available stock = moq - sold quantity (from invoices)
   const stockData = useMemo(() => {
     if (!products.length) return [];
-    return products.map(product => {
-      const currentStock = Math.max(0, getNum(product, 'moq', 0));
-      return {
-        id: getId(product._id),
+
+    // Map productId -> available stock (start with moq)
+    const stockMap = new Map();
+    products.forEach(product => {
+      const id = getId(product._id);
+      const moq = getNum(product, 'moq', 0);
+      stockMap.set(id, {
+        id,
         name: getStr(product, 'name'),
         sku: getStr(product, 'sku'),
-        currentStock,
-        status: getStockStatus(currentStock),
-      };
+        availableStock: moq,
+      });
     });
-  }, [products]);
 
-  // ✅ New count definitions:
-  const inStockCount = stockData.filter(i => i.currentStock > 0).length;   // any positive stock
-  const lowStockCount = stockData.filter(i => i.status === 'LOW_STOCK').length;
+    // Subtract sold quantities from invoices
+    invoices.forEach(invoice => {
+      (invoice.items || []).forEach(item => {
+        const prodId = getId(item.productId);
+        if (stockMap.has(prodId)) {
+          const sold = getNum(item, 'qty', 0);
+          const current = stockMap.get(prodId).availableStock;
+          stockMap.get(prodId).availableStock = Math.max(0, current - sold);
+        }
+      });
+    });
+
+    // Convert to array and add status
+    return Array.from(stockMap.values()).map(item => ({
+      ...item,
+      availableStock: item.availableStock,
+      status: item.availableStock <= 0 ? 'OUT_OF_STOCK'
+            : item.availableStock <= LOW_STOCK_THRESHOLD ? 'LOW_STOCK'
+            : 'IN_STOCK'
+    }));
+  }, [products, invoices]);
+
+  const inStockCount    = stockData.filter(i => i.status === 'IN_STOCK').length;
+  const lowStockCount   = stockData.filter(i => i.status === 'LOW_STOCK').length;
   const outOfStockCount = stockData.filter(i => i.status === 'OUT_OF_STOCK').length;
 
   const filteredData = useMemo(() => {
     if (!activeFilter) return stockData;
-    // Map filter to the logic: "IN_STOCK" now means stock > 0? But careful: the status field still uses old categories.
-    // To keep filtering working, we need to adjust the filter mapping:
-    if (activeFilter === 'IN_STOCK') {
-      return stockData.filter(item => item.currentStock > 0);
-    }
-    if (activeFilter === 'LOW_STOCK') {
-      return stockData.filter(item => item.currentStock > 0 && item.currentStock <= LOW_STOCK_THRESHOLD);
-    }
-    if (activeFilter === 'OUT_OF_STOCK') {
-      return stockData.filter(item => item.currentStock === 0);
-    }
-    return stockData;
+    return stockData.filter(item => item.status === activeFilter);
   }, [stockData, activeFilter]);
 
   const handleFilterPress = (filter) => {
     setActiveFilter(activeFilter === filter ? null : filter);
   };
 
-  if (productsLoading) {
+  if (productsLoading || invoicesLoading) {
     return (
       <div className={`stock-page ${isDark ? 'dark' : ''}`}>
         <div className="stock-loading">
@@ -182,19 +191,19 @@ const StockVisibilityPage = () => {
                 <div className="product-sku">SKU: {product.sku}</div>
               </div>
               <div className="status-badge">
-                {product.currentStock > 0 && product.currentStock <= LOW_STOCK_THRESHOLD && (
+                {product.status === 'LOW_STOCK' && (
                   <>
                     <AlertTriangle size={16} color="#F57C00" />
-                    <span className="stock-count low-stock">{product.currentStock}</span>
+                    <span className="stock-count low-stock">{product.availableStock}</span>
                   </>
                 )}
-                {product.currentStock > LOW_STOCK_THRESHOLD && (
+                {product.status === 'IN_STOCK' && (
                   <>
                     <CheckCircle size={16} color="#2E7D32" />
-                    <span className="stock-count in-stock">{product.currentStock}</span>
+                    <span className="stock-count in-stock">{product.availableStock}</span>
                   </>
                 )}
-                {product.currentStock === 0 && (
+                {product.status === 'OUT_OF_STOCK' && (
                   <>
                     <XCircle size={16} color="#C62828" />
                     <span className="stock-count out-stock">Out</span>

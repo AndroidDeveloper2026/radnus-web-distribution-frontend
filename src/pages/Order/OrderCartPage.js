@@ -2,12 +2,40 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../../services/features/products/productSlice';
-// ❌ No need to fetch invoices for stock calculation
-// import { fetchInvoices } from '../../services/features/invoice/invoiceSlice';
+import { fetchInvoices } from '../../services/features/invoice/invoiceSlice'; // ✅ added
 import { useTheme } from '../../context/ThemeContext';
 import './OrderCartPage.css';
 
 import { Search, X, Package, ShoppingCart } from 'lucide-react';
+
+// ------------------ Helper functions (same as StockVisibility) ------------------
+const getNum = (obj, key, fallback = 0) => {
+  if (obj?.[key] !== undefined && obj?.[key] !== null) {
+    const val = Number(obj[key]);
+    if (!isNaN(val)) return val;
+  }
+  const spacedKey = key + ' ';
+  if (obj?.[spacedKey] !== undefined && obj?.[spacedKey] !== null) {
+    const val = Number(obj[spacedKey]);
+    if (!isNaN(val)) return val;
+  }
+  return fallback;
+};
+
+const getStr = (obj, key, fallback = '') => {
+  if (obj?.[key] !== undefined && obj?.[key] !== null) return String(obj[key]).trim();
+  const spacedKey = key + ' ';
+  if (obj?.[spacedKey] !== undefined && obj?.[spacedKey] !== null) return String(obj[spacedKey]).trim();
+  return fallback;
+};
+
+const getId = (obj) => {
+  if (!obj) return '';
+  if (typeof obj === 'string') return obj;
+  if (obj.$oid) return obj.$oid;
+  return obj._id || obj.id;
+};
+// -----------------------------------------------------------------------------
 
 const PriceTypeSelector = ({ priceType, onSelectPriceType }) => {
   const options = [
@@ -83,8 +111,7 @@ const OrderCartPage = () => {
   const isDark = theme === 'dark';
 
   const products = useSelector(state => state.products.list);
-  // ❌ No invoices selector needed
-  // const invoices = useSelector(state => state.invoice.data);
+  const invoices = useSelector(state => state.invoice?.data || []); // ✅ invoice data
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState([]);
@@ -94,45 +121,77 @@ const OrderCartPage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // ✅ Only fetch products – invoices are NOT needed for stock
-        if (!products?.length) {
-          await dispatch(fetchProducts());
-        }
+        // ✅ Fetch both products and invoices to compute real stock
+        await Promise.all([
+          dispatch(fetchProducts()),
+          dispatch(fetchInvoices('all'))
+        ]);
       } catch (error) {
-        console.error('Failed to load products:', error);
+        console.error('Failed to load data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, [dispatch, products]);
+  }, [dispatch]);
 
-  // ✅ No soldMap – we trust product.moq as the current stock
+  // ✅ Compute available stock = moq - sold (same logic as StockVisibility)
+  const stockDataMap = useMemo(() => {
+    if (!products.length) return new Map();
 
+    // Initialise with moq
+    const stockMap = new Map();
+    products.forEach(product => {
+      const id = getId(product._id);
+      const moq = getNum(product, 'moq', 0);
+      stockMap.set(id, {
+        id,
+        name: getStr(product, 'name'),
+        sku: getStr(product, 'sku'),
+        retailerPrice: getNum(product, 'retailerPrice'),
+        distributorPrice: getNum(product, 'distributorPrice'),
+        walkinPrice: getNum(product, 'walkinPrice'),
+        mrp: getNum(product, 'mrp'),
+        image: product.image ?? null,
+        availableStock: moq,
+      });
+    });
+
+    // Subtract sold quantities from invoices
+    invoices.forEach(invoice => {
+      (invoice.items || []).forEach(item => {
+        const prodId = getId(item.productId);
+        if (stockMap.has(prodId)) {
+          const sold = getNum(item, 'qty', 0);
+          const current = stockMap.get(prodId).availableStock;
+          stockMap.get(prodId).availableStock = Math.max(0, current - sold);
+        }
+      });
+    });
+
+    return stockMap;
+  }, [products, invoices]);
+
+  // Build cart from stockDataMap (only once)
   useEffect(() => {
-    if (!products?.length) return;
+    if (!stockDataMap.size) return;
     if (hasInitialized.current) return;
 
-    // ✅ Directly use product.moq as current stock (backend already reduced it)
-    const newCart = products.map(p => {
-      const currentStock = Math.max(0, Number(p.moq) || 0);
-      return {
-        id: p._id,
-        name: p.name ?? 'Unnamed',
-        sku: p.sku ?? '-',
-        retailerPrice: Number(p.retailerPrice) || 0,
-        distributorPrice: Number(p.distributorPrice) || 0,
-        walkinPrice: Number(p.walkinPrice) || 0,
-        mrp: Number(p.mrp) || 0,
-        qty: 0,
-        moq: currentStock,      // store current stock for reference (optional)
-        currentStock: currentStock,
-        image: p.image ?? null,
-      };
-    });
+    const newCart = Array.from(stockDataMap.values()).map(item => ({
+      id: item.id,
+      name: item.name,
+      sku: item.sku,
+      retailerPrice: item.retailerPrice,
+      distributorPrice: item.distributorPrice,
+      walkinPrice: item.walkinPrice,
+      mrp: item.mrp,
+      image: item.image,
+      currentStock: item.availableStock,   // ✅ real available stock
+      qty: 0,
+    }));
     setCart(newCart);
     hasInitialized.current = true;
-  }, [products]); // ✅ No invoices dependency
+  }, [stockDataMap]);
 
   const updateQty = useCallback((id, type) => {
     setCart(prev => {
