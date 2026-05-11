@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Plus,
@@ -15,21 +15,19 @@ import {
   updateProduct,
   deleteProduct,
 } from '../../services/features/products/productSlice';
-import { fetchInvoices } from '../../services/features/invoice/invoiceSlice'; // 👈 import invoice action
+import { fetchInvoices } from '../../services/features/invoice/invoiceSlice';
 import { createActivityLog } from '../../services/features/activity/activitySlice';
 import { selectAuthState } from '../../store/selectors/authSelector';
 import {
   Button,
   Modal,
-  Input,
-  Select,
   toast,
   ConfirmDialog,
   Spinner,
 } from '../../components/ui/UI';
 import './Products.css';
 
-/* ─── Category options (matching mobile) ─── */
+/* ─── Category & Status options ─── */
 const CAT_OPTS = [
   { value: '', label: 'Select Category' },
   { value: 'PD Chargers & Car Chargers', label: 'PD Chargers & Car Chargers' },
@@ -47,7 +45,7 @@ const STATUS_OPTS = [
   { value: 'Inactive', label: 'Inactive' },
 ];
 
-/* ─── Validation (same logic as mobile Yup) ─── */
+/* ─── Validation (unchanged) ─── */
 const validate = (fields) => {
   const errors = {};
   if (!fields.name.trim()) errors.name = 'Product name is required';
@@ -80,6 +78,21 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
   const { user } = useSelector(selectAuthState);
   const fileInputRef = useRef();
 
+  // ✅ Get invoices to compute total sold for the edited product
+  const { data: invoices } = useSelector((state) => state.invoice || { data: [] });
+
+  // ✅ Total sold for the product currently being edited
+  const totalSold = useMemo(() => {
+    if (!isEdit || !editProduct) return 0;
+    if (!invoices || invoices.length === 0) return 0;
+    return invoices.reduce((sum, inv) => {
+      const item = inv.items?.find(
+        (i) => i.productId === editProduct._id
+      );
+      return sum + (item?.qty || 0);
+    }, 0);
+  }, [isEdit, editProduct, invoices]);
+
   const emptyForm = {
     name: '',
     category: '',
@@ -98,8 +111,8 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
   };
 
   const [form, setForm] = useState(emptyForm);
-  const [image, setImage] = useState(null);     // File object or null
-  const [preview, setPreview] = useState(null); // preview URL
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -107,6 +120,8 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
     if (!open) return;
     if (editProduct) {
       const p = editProduct;
+      // ✅ Show "current stock" (moq - totalSold) in the modal
+      const displayStock = Math.max(0, (p.moq ?? 0) - totalSold);
       setForm({
         name: p.name || '',
         category: p.category || '',
@@ -114,16 +129,15 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
         batchNo: p.batchNo || '',
         rackNo: p.rackNo || '',
         vendorName: p.vendorName || '',
-        itemCost: p.itemCost ?? '',
-        distributorPrice: p.distributorPrice ?? '',
-        retailerPrice: p.retailerPrice ?? '',
-        walkinPrice: p.walkinPrice ?? '',
-        mrp: p.mrp ?? '',
-        gst: p.gst ?? '',
-        moq: p.moq ?? '',
+        itemCost: String(p.itemCost ?? ''),
+        distributorPrice: String(p.distributorPrice ?? ''),
+        retailerPrice: String(p.retailerPrice ?? ''),
+        walkinPrice: String(p.walkinPrice ?? ''),
+        mrp: String(p.mrp ?? ''),
+        gst: String(p.gst ?? ''),
+        moq: String(displayStock),   // 🔥 Now shows current available stock
         status: p.status || 'Active',
       });
-      // Show existing image as preview
       setPreview(typeof p.image === 'string' ? p.image : null);
       setImage(null);
     } else {
@@ -132,7 +146,7 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
       setImage(null);
     }
     setErrors({});
-  }, [open, editProduct]);
+  }, [open, editProduct, totalSold]);
 
   const handleChange = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -157,7 +171,6 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
       toast.error('Please fix the highlighted fields');
       return;
     }
-    // Image required only for new product
     if (!isEdit && !image) {
       toast.error('Product image is required');
       return;
@@ -165,15 +178,20 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
 
     setSaving(true);
     try {
+      // ✅ Convert form's stock value back to the actual moq
+      const finalForm = { ...form };
+      if (isEdit) {
+        const stockVal = Number(form.moq);
+        finalForm.moq = String(stockVal + totalSold);   // moq = displayed stock + sold
+      }
+
       const fd = new FormData();
-      Object.entries(form).forEach(([key, val]) => {
+      Object.entries(finalForm).forEach(([key, val]) => {
         if (val !== '' && val !== null && val !== undefined) {
           fd.append(key, val);
         }
       });
-      if (image) {
-        fd.append('image', image);
-      }
+      if (image) fd.append('image', image);
 
       let result;
       if (isEdit) {
@@ -181,7 +199,6 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
           updateProduct({ id: editProduct._id, formData: fd })
         ).unwrap();
         toast.success('Product updated');
-
         await dispatch(
           createActivityLog({
             action: 'EDIT_PRODUCT',
@@ -194,7 +211,6 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
       } else {
         result = await dispatch(addProduct(fd)).unwrap();
         toast.success('Product added');
-
         await dispatch(
           createActivityLog({
             action: 'ADD_PRODUCT',
@@ -206,7 +222,6 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
           })
         );
       }
-
       onClose();
     } catch (err) {
       toast.error(err?.message || 'Operation failed');
@@ -215,15 +230,26 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
     }
   };
 
-  const input = (label, field, props = {}) => (
-    <Input
-      label={label}
-      value={form[field]}
-      onChange={handleChange(field)}
-      error={errors[field]}
-      {...props}
-    />
-  );
+  // Reusable input builder
+  const renderInput = (label, field, options = {}) => {
+    const { type = 'text', step, ...rest } = options;
+    const id = `field-${field}`;
+    return (
+      <div className="field" key={field}>
+        <label htmlFor={id} className="field-label">{label}</label>
+        <input
+          id={id}
+          type={type}
+          step={step}
+          value={form[field]}
+          onChange={handleChange(field)}
+          className={`field-input ${errors[field] ? 'field-input-error' : ''}`}
+          {...rest}
+        />
+        {errors[field] && <span className="field-error">{errors[field]}</span>}
+      </div>
+    );
+  };
 
   return (
     <Modal
@@ -232,19 +258,9 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
       title={isEdit ? 'Edit Product' : 'Add Product'}
       footer={
         <div className="prod-footer">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            loading={saving}
-            onClick={handleSubmit}
-          >
-            {saving
-              ? 'Saving...'
-              : isEdit
-              ? 'Update Product'
-              : 'Save Product'}
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" loading={saving} onClick={handleSubmit}>
+            {saving ? 'Saving...' : isEdit ? 'Update Product' : 'Save Product'}
           </Button>
         </div>
       }
@@ -259,11 +275,7 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
             {preview ? (
               <div className="img-preview-wrap">
                 <img src={preview} alt="preview" className="img-preview" />
-                <button
-                  type="button"
-                  className="img-remove-btn"
-                  onClick={clearImage}
-                >
+                <button type="button" className="img-remove-btn" onClick={clearImage}>
                   <X size={16} />
                 </button>
               </div>
@@ -283,54 +295,66 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
           </div>
         </div>
 
-        {input('Product Name *', 'name')}
-        <Select
-          label="Category *"
-          options={CAT_OPTS}
-          value={form.category}
-          onChange={(e) => {
-            setForm((f) => ({ ...f, category: e.target.value }));
-            setErrors((e) => ({ ...e, category: undefined }));
-          }}
-          error={errors.category}
-        />
-        {input('SKU *', 'sku')}
-        {input('Batch No *', 'batchNo')}
-        {input('Rack No *', 'rackNo')}
-        {input('Vendor Name *', 'vendorName')}
-        {input('Item Cost (₹) *', 'itemCost', { type: 'number' })}
+        {renderInput('Product Name *', 'name')}
+
+        <div className="field">
+          <label className="field-label">Category *</label>
+          <select
+            value={form.category}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, category: e.target.value }));
+              setErrors((e) => ({ ...e, category: undefined }));
+            }}
+            className={`field-input ${errors.category ? 'field-input-error' : ''}`}
+          >
+            {CAT_OPTS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {errors.category && <span className="field-error">{errors.category}</span>}
+        </div>
+
+        {renderInput('SKU *', 'sku')}
+        {renderInput('Batch No *', 'batchNo')}
+        {renderInput('Rack No *', 'rackNo')}
+        {renderInput('Vendor Name *', 'vendorName')}
+
+        {renderInput('Item Cost (₹) *', 'itemCost', { type: 'number' })}
+
         <div className="form-row">
-          {input('Distributor Price (₹) *', 'distributorPrice', {
-            type: 'number',
-          })}
-          {input('Retailer Price (₹) *', 'retailerPrice', { type: 'number' })}
+          {renderInput('Distributor Price (₹) *', 'distributorPrice', { type: 'number' })}
+          {renderInput('Retailer Price (₹) *', 'retailerPrice', { type: 'number' })}
         </div>
         <div className="form-row">
-          {input('Walk‑in Price (₹) *', 'walkinPrice', { type: 'number' })}
-          {input('MRP (₹) *', 'mrp', { type: 'number' })}
+          {renderInput('Walk‑in Price (₹) *', 'walkinPrice', { type: 'number' })}
+          {renderInput('MRP (₹) *', 'mrp', { type: 'number' })}
         </div>
         <div className="form-row">
-          {input('GST (%) *', 'gst', { type: 'number', step: '0.01' })}
-          {input('Stock (Units) *', 'moq', { type: 'number' })}
+          {renderInput('GST (%) *', 'gst', { type: 'number', step: '0.01' })}
+          {renderInput('Stock (Units) *', 'moq', { type: 'number' })}
         </div>
-        <Select
-          label="Status"
-          options={STATUS_OPTS}
-          value={form.status}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, status: e.target.value }))
-          }
-        />
+
+        <div className="field">
+          <label className="field-label">Status</label>
+          <select
+            value={form.status}
+            onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+            className="field-input"
+          >
+            {STATUS_OPTS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
     </Modal>
   );
 };
 
-/* ─── Product Card (web, now with live stock) ─── */
+/* ─── ProductCard (unchanged) ─── */
 const ProductCard = ({ product, onEdit, onDelete, role, currentStock }) => {
   const canManage = ['Admin', 'Radnus'].includes(role);
   const outOfStock = (currentStock ?? 0) === 0;
-  const lowStock = (currentStock ?? 0) > 0 && (currentStock ?? 0) < 20;
 
   return (
     <div className={`product-card ${outOfStock ? 'out-of-stock' : ''}`}>
@@ -348,9 +372,7 @@ const ProductCard = ({ product, onEdit, onDelete, role, currentStock }) => {
           <div className="prod-vendor">Vendor: {product.vendorName || '–'}</div>
           <div
             className="prod-stock"
-            style={{
-              color: outOfStock ? 'var(--red-bright)' : 'var(--green-dark)',
-            }}
+            style={{ color: outOfStock ? 'var(--red-bright)' : 'var(--green-dark)' }}
           >
             Stock: {currentStock ?? 0}
           </div>
@@ -371,41 +393,23 @@ const ProductCard = ({ product, onEdit, onDelete, role, currentStock }) => {
       </div>
       <div className="product-card-divider" />
       <div className="product-price-grid">
-        <div className="price-item">
-          <span className="price-lbl">Item Cost</span>
-          <span className="price-val">₹{product.itemCost ?? 0}</span>
-        </div>
-        <div className="price-item">
-          <span className="price-lbl">Distributor</span>
-          <span className="price-val">₹{product.distributorPrice ?? 0}</span>
-        </div>
-        <div className="price-item">
-          <span className="price-lbl">Retailer</span>
-          <span className="price-val">₹{product.retailerPrice ?? 0}</span>
-        </div>
-        <div className="price-item">
-          <span className="price-lbl">Walk‑in</span>
-          <span className="price-val">₹{product.walkinPrice ?? 0}</span>
-        </div>
-        <div className="price-item">
-          <span className="price-lbl">MRP</span>
-          <span className="price-val">₹{product.mrp ?? 0}</span>
-        </div>
-        <div className="price-item">
-          <span className="price-lbl">GST</span>
-          <span className="price-val">{product.gst ?? 0}%</span>
-        </div>
+        <div className="price-item"><span className="price-lbl">Item Cost</span><span className="price-val">₹{product.itemCost ?? 0}</span></div>
+        <div className="price-item"><span className="price-lbl">Distributor</span><span className="price-val">₹{product.distributorPrice ?? 0}</span></div>
+        <div className="price-item"><span className="price-lbl">Retailer</span><span className="price-val">₹{product.retailerPrice ?? 0}</span></div>
+        <div className="price-item"><span className="price-lbl">Walk‑in</span><span className="price-val">₹{product.walkinPrice ?? 0}</span></div>
+        <div className="price-item"><span className="price-lbl">MRP</span><span className="price-val">₹{product.mrp ?? 0}</span></div>
+        <div className="price-item"><span className="price-lbl">GST</span><span className="price-val">{product.gst ?? 0}%</span></div>
       </div>
     </div>
   );
 };
 
-/* ═══ Products Page ═══════════════════════════════════════════════════════════════ */
+/* ═══ Products Page ═══════════════════════════════════════════════ */
 const ProductsPage = () => {
   const dispatch = useDispatch();
   const { role } = useSelector(selectAuthState);
   const { list: products, loading } = useSelector((s) => s.products);
-  const { data: invoices } = useSelector((state) => state.invoice || { data: [] }); // 👈 get invoices
+  const { data: invoices } = useSelector((state) => state.invoice || { data: [] });
 
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('');
@@ -413,29 +417,23 @@ const ProductsPage = () => {
   const [editTarget, setEditTarget] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
 
-  // Fetch products and invoices on mount
   useEffect(() => {
     dispatch(fetchProducts());
-    dispatch(fetchInvoices("all")); // 👈 fetch all invoices for stock calculation
+    dispatch(fetchInvoices("all"));
   }, [dispatch]);
 
-  // 🧮 Calculate current stock (same as mobile)
   const getCurrentStock = (productId, moq) => {
     if (!invoices || invoices.length === 0) return moq;
-    const totalSold = invoices.reduce((sum, invoice) => {
-      const item = invoice.items?.find(i => i.productId === productId);
+    const totalSold = invoices.reduce((sum, inv) => {
+      const item = inv.items?.find(i => i.productId === productId);
       return sum + (item?.qty || 0);
     }, 0);
     return Math.max(0, moq - totalSold);
   };
 
-  // Search & filter
   const filtered = products.filter((p) => {
     const s = search.toLowerCase().trim();
-    const matchSearch =
-      !s ||
-      (p.name || '').toLowerCase().includes(s) ||
-      (p.sku || '').toLowerCase().includes(s);
+    const matchSearch = !s || (p.name || '').toLowerCase().includes(s) || (p.sku || '').toLowerCase().includes(s);
     const matchCat = !catFilter || p.category === catFilter;
     return matchSearch && matchCat;
   });
@@ -454,10 +452,7 @@ const ProductsPage = () => {
     setModal(true);
   };
 
-  // Dynamic category list (unique values)
-  const dynamicCatOptions = [
-    ...new Set(products.map((p) => p.category).filter(Boolean)),
-  ];
+  const dynamicCatOptions = [...new Set(products.map((p) => p.category).filter(Boolean))];
 
   return (
     <div>
@@ -482,32 +477,22 @@ const ProductsPage = () => {
             placeholder="Search by name or SKU…"
           />
         </div>
-        <select
-          className="cat-select"
-          value={catFilter}
-          onChange={(e) => setCatFilter(e.target.value)}
-        >
+        <select className="cat-select" value={catFilter} onChange={(e) => setCatFilter(e.target.value)}>
           <option value="">All Categories</option>
           {dynamicCatOptions.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
+            <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
       </div>
 
       {loading ? (
-        <div className="loading-center">
-          <Spinner size="lg" />
-        </div>
+        <div className="loading-center"><Spinner size="lg" /></div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <Package size={40} />
           <p>No products found</p>
           {['Admin', 'Radnus'].includes(role) && (
-            <Button variant="primary" size="sm" onClick={openAdd}>
-              Add Product
-            </Button>
+            <Button variant="primary" size="sm" onClick={openAdd}>Add Product</Button>
           )}
         </div>
       ) : (
@@ -517,7 +502,7 @@ const ProductsPage = () => {
               key={p._id}
               product={p}
               role={role}
-              currentStock={getCurrentStock(p._id, p.moq)} // 👈 pass live stock
+              currentStock={getCurrentStock(p._id, p.moq)}
               onEdit={openEdit}
               onDelete={(id) => setDeleteId(id)}
             />
@@ -525,12 +510,11 @@ const ProductsPage = () => {
         </div>
       )}
 
+      {/* ✅ Key forces remount when switching between add/edit */}
       <ProductFormModal
+        key={editTarget?._id || 'new'}
         open={modal}
-        onClose={() => {
-          setModal(false);
-          setEditTarget(null);
-        }}
+        onClose={() => { setModal(false); setEditTarget(null); }}
         editProduct={editTarget}
       />
 
