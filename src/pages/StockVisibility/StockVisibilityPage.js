@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '../../services/features/products/productSlice';
-import { fetchInvoices } from '../../services/features/invoice/invoiceSlice';
 import { useTheme } from '../../context/ThemeContext';
 import './StockVisibilityPage.css';
 import { Package, CheckCircle, AlertTriangle, XCircle, RefreshCw, Loader } from 'lucide-react';
@@ -56,13 +55,10 @@ const StockVisibilityPage = () => {
   const [activeFilter, setActiveFilter] = useState(null);
 
   const { list: products = [], loading: productsLoading } = useSelector(state => state.products) || {};
-  const { data: invoices = [], loading: invoicesLoading } = useSelector(state => state.invoice) || {};
 
   const loadData = useCallback(async () => {
-    await Promise.all([
-      dispatch(fetchProducts()),
-      dispatch(fetchInvoices('all'))
-    ]);
+    // Fetch only products – stock is now taken directly from product.moq (or product.stock)
+    await dispatch(fetchProducts());
   }, [dispatch]);
 
   useEffect(() => {
@@ -75,44 +71,27 @@ const StockVisibilityPage = () => {
     setRefreshing(false);
   };
 
-  // 📊 Compute available stock = moq - sold quantity (from invoices)
+  // 📊 Compute available stock directly from product data (no invoice subtraction)
   const stockData = useMemo(() => {
     if (!products.length) return [];
 
-    // Map productId -> available stock (start with moq)
-    const stockMap = new Map();
-    products.forEach(product => {
+    return products.map(product => {
       const id = getId(product._id);
-      const moq = getNum(product, 'moq', 0);
-      stockMap.set(id, {
+      // Use 'stock' field if it exists, otherwise fallback to 'moq'
+      // Both represent the live stock after sales (backend updates moq)
+      const availableStock = getNum(product, 'stock') || getNum(product, 'moq', 0);
+
+      return {
         id,
         name: getStr(product, 'name'),
         sku: getStr(product, 'sku'),
-        availableStock: moq,
-      });
+        availableStock,
+        status: availableStock <= 0 ? 'OUT_OF_STOCK'
+              : availableStock <= LOW_STOCK_THRESHOLD ? 'LOW_STOCK'
+              : 'IN_STOCK'
+      };
     });
-
-    // Subtract sold quantities from invoices
-    invoices.forEach(invoice => {
-      (invoice.items || []).forEach(item => {
-        const prodId = getId(item.productId);
-        if (stockMap.has(prodId)) {
-          const sold = getNum(item, 'qty', 0);
-          const current = stockMap.get(prodId).availableStock;
-          stockMap.get(prodId).availableStock = Math.max(0, current - sold);
-        }
-      });
-    });
-
-    // Convert to array and add status
-    return Array.from(stockMap.values()).map(item => ({
-      ...item,
-      availableStock: item.availableStock,
-      status: item.availableStock <= 0 ? 'OUT_OF_STOCK'
-            : item.availableStock <= LOW_STOCK_THRESHOLD ? 'LOW_STOCK'
-            : 'IN_STOCK'
-    }));
-  }, [products, invoices]);
+  }, [products]);
 
   const inStockCount    = stockData.filter(i => i.status === 'IN_STOCK').length;
   const lowStockCount   = stockData.filter(i => i.status === 'LOW_STOCK').length;
@@ -127,7 +106,7 @@ const StockVisibilityPage = () => {
     setActiveFilter(activeFilter === filter ? null : filter);
   };
 
-  if (productsLoading || invoicesLoading) {
+  if (productsLoading) {
     return (
       <div className={`stock-page ${isDark ? 'dark' : ''}`}>
         <div className="stock-loading">

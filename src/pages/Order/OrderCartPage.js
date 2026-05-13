@@ -2,13 +2,13 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchProducts } from '../../services/features/products/productSlice';
-import { fetchInvoices } from '../../services/features/invoice/invoiceSlice'; // ✅ added
+import { fetchInvoices } from '../../services/features/invoice/invoiceSlice'; // still needed for order summary if you want
 import { useTheme } from '../../context/ThemeContext';
 import './OrderCartPage.css';
 
 import { Search, X, Package, ShoppingCart } from 'lucide-react';
 
-// ------------------ Helper functions (same as StockVisibility) ------------------
+// ------------------ Helper functions ------------------
 const getNum = (obj, key, fallback = 0) => {
   if (obj?.[key] !== undefined && obj?.[key] !== null) {
     const val = Number(obj[key]);
@@ -35,7 +35,7 @@ const getId = (obj) => {
   if (obj.$oid) return obj.$oid;
   return obj._id || obj.id;
 };
-// -----------------------------------------------------------------------------
+// -------------------------------------------------------
 
 const PriceTypeSelector = ({ priceType, onSelectPriceType }) => {
   const options = [
@@ -111,7 +111,7 @@ const OrderCartPage = () => {
   const isDark = theme === 'dark';
 
   const products = useSelector(state => state.products.list);
-  const invoices = useSelector(state => state.invoice?.data || []); // ✅ invoice data
+  const invoices = useSelector(state => state.invoice?.data || []);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState([]);
@@ -121,11 +121,8 @@ const OrderCartPage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // ✅ Fetch both products and invoices to compute real stock
-        await Promise.all([
-          dispatch(fetchProducts()),
-          dispatch(fetchInvoices('all'))
-        ]);
+        // Fetch products – backend already returns current stock via moq
+        await dispatch(fetchProducts());
       } catch (error) {
         console.error('Failed to load data:', error);
       } finally {
@@ -135,15 +132,15 @@ const OrderCartPage = () => {
     loadData();
   }, [dispatch]);
 
-  // ✅ Compute available stock = moq - sold (same logic as StockVisibility)
+  // Compute available stock directly from product moq (no invoice subtraction)
   const stockDataMap = useMemo(() => {
     if (!products.length) return new Map();
 
-    // Initialise with moq
     const stockMap = new Map();
     products.forEach(product => {
       const id = getId(product._id);
-      const moq = getNum(product, 'moq', 0);
+      const moq = getNum(product, 'moq', 0); // this is already live stock
+
       stockMap.set(id, {
         id,
         name: getStr(product, 'name'),
@@ -153,24 +150,12 @@ const OrderCartPage = () => {
         walkinPrice: getNum(product, 'walkinPrice'),
         mrp: getNum(product, 'mrp'),
         image: product.image ?? null,
-        availableStock: moq,
-      });
-    });
-
-    // Subtract sold quantities from invoices
-    invoices.forEach(invoice => {
-      (invoice.items || []).forEach(item => {
-        const prodId = getId(item.productId);
-        if (stockMap.has(prodId)) {
-          const sold = getNum(item, 'qty', 0);
-          const current = stockMap.get(prodId).availableStock;
-          stockMap.get(prodId).availableStock = Math.max(0, current - sold);
-        }
+        availableStock: moq,            // use moq as real stock
       });
     });
 
     return stockMap;
-  }, [products, invoices]);
+  }, [products]);   // invoices are not needed here
 
   // Build cart from stockDataMap (only once)
   useEffect(() => {
@@ -186,7 +171,7 @@ const OrderCartPage = () => {
       walkinPrice: item.walkinPrice,
       mrp: item.mrp,
       image: item.image,
-      currentStock: item.availableStock,   // ✅ real available stock
+      currentStock: item.availableStock,
       qty: 0,
     }));
     setCart(newCart);

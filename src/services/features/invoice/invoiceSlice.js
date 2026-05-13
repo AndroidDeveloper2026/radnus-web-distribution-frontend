@@ -1,8 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import API from '../../API/api';
 
-
-
 export const fetchInvoices = createAsyncThunk(
   'invoice/fetchInvoices',
   async ({ filter = 'all', billerName = '' }, { rejectWithValue }) => {

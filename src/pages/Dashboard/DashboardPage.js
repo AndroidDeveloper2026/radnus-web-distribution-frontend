@@ -262,80 +262,70 @@ const RadnusDashboard = () => {
     }
   }, [user?.name]);
 
-  const computeStockAndMovements = useCallback(async () => {
-    if (products.length === 0) return;
+  const computeItemCost = useCallback(() => {
     setItemCostLoading(true);
+    try {
+      let totalCost = 0;
+      products.forEach(product => {
+        // Use stock field if present, else moq (both represent live stock from backend)
+        const stock = getNum(product, 'stock') || getNum(product, 'moq', 0);
+        const itemCost = getNum(product, 'itemCost', 0);
+        totalCost += stock * itemCost;
+      });
+      setTotalItemCostValue(totalCost);
+    } catch (error) {
+      console.error('Failed to compute item cost:', error);
+      setTotalItemCostValue(0);
+    } finally {
+      setItemCostLoading(false);
+    }
+  }, [products]);
+
+  const computeInwardOutward = useCallback(async () => {
+    if (products.length === 0) return;
     setInwardOutwardLoading(true);
     try {
-      const response = await api.get('/api/invoices?filter=all');
-      const allInvoices = (response.data || []).filter(inv => inv.status !== 'draft');
       const today = new Date();
 
+      // Today's inward = total moq of products created today
       let todayInward = 0;
-      let todayOutward = 0;
-      const stockMap = {};
-
       products.forEach(product => {
-        const pid = getId(product._id);
-        const moq = getNum(product, 'moq') || 0;
-        const stock = getNum(product, 'stock') || moq;
-        const walkinPrice = getNum(product, 'walkinPrice');
-        const itemCost = getNum(product, 'itemCost');
         const createdAt = parseDate(product.createdAt);
         if (isSameDay(createdAt, today)) {
-          todayInward += moq;
+          todayInward += getNum(product, 'moq', 0);
         }
-        stockMap[pid] = {
-          currentStock: stock,
-          walkinPrice: walkinPrice,
-          itemCost: itemCost,
-        };
       });
 
-      allInvoices.forEach(invoice => {
-        const invDate = parseDate(invoice.createdAt);
-        const isToday = isSameDay(invDate, today);
+      // Today's outward = sum of item quantities from today's completed invoices
+      const response = await api.get('/api/invoices?filter=today');
+      const todayInvoices = (response.data || []).filter(inv => inv.status !== 'draft');
+      let todayOutward = 0;
+      todayInvoices.forEach(invoice => {
         (invoice.items || []).forEach(item => {
-          const qty = getNum(item, 'qty');
-          if (isToday) {
-            todayOutward += qty;
-          }
-          const pid = getId(item.productId);
-          if (stockMap[pid]) {
-            stockMap[pid].currentStock -= qty;
-          }
+          todayOutward += getNum(item, 'qty', 0);
         });
       });
 
-      let totalCost = 0;
-      Object.values(stockMap).forEach(item => {
-        const current = item.currentStock || 0;
-        const cost = current * (item.itemCost || 0);
-        totalCost += isNaN(cost) ? 0 : cost;
-      });
-
-      setTotalItemCostValue(totalCost);
       setTotalInward(todayInward);
       setTotalOutward(todayOutward);
     } catch (error) {
-      console.error('Failed to compute data:', error);
-      setTotalItemCostValue(0);
+      console.error('Failed to compute inward/outward:', error);
       setTotalInward(0);
       setTotalOutward(0);
     } finally {
-      setItemCostLoading(false);
       setInwardOutwardLoading(false);
     }
   }, [products]);
 
   useEffect(() => {
     fetchTodaySales();
-    computeStockAndMovements();
-  }, [fetchTodaySales, computeStockAndMovements]);
+    computeItemCost();
+    computeInwardOutward();
+  }, [fetchTodaySales, computeItemCost, computeInwardOutward]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchTodaySales(), computeStockAndMovements()]);
+    await Promise.all([fetchTodaySales(), computeItemCost(), computeInwardOutward()]);
     setRefreshing(false);
   };
 

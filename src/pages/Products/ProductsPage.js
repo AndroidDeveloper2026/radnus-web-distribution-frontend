@@ -78,21 +78,8 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
   const { user } = useSelector(selectAuthState);
   const fileInputRef = useRef();
 
-  // ✅ Get invoices to compute total sold for the edited product
-  const { data: invoices } = useSelector((state) => state.invoice || { data: [] });
-
-  // ✅ Total sold for the product currently being edited
-  const totalSold = useMemo(() => {
-    if (!isEdit || !editProduct) return 0;
-    if (!invoices || invoices.length === 0) return 0;
-    return invoices.reduce((sum, inv) => {
-      const item = inv.items?.find(
-        (i) => i.productId === editProduct._id
-      );
-      return sum + (item?.qty || 0);
-    }, 0);
-  }, [isEdit, editProduct, invoices]);
-
+  // Invoices are not used to compute stock anymore; they are still fetched
+  // but we remove the totalSold logic.
   const emptyForm = {
     name: '',
     category: '',
@@ -120,8 +107,8 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
     if (!open) return;
     if (editProduct) {
       const p = editProduct;
-      // ✅ Show "current stock" (moq - totalSold) in the modal
-      const displayStock = Math.max(0, (p.moq ?? 0) - totalSold);
+      // Show the current stock from the product itself (already updated by backend)
+      const displayStock = p.moq ?? 0;
       setForm({
         name: p.name || '',
         category: p.category || '',
@@ -135,7 +122,7 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
         walkinPrice: String(p.walkinPrice ?? ''),
         mrp: String(p.mrp ?? ''),
         gst: String(p.gst ?? ''),
-        moq: String(displayStock),   // 🔥 Now shows current available stock
+        moq: String(displayStock),   // live stock from backend
         status: p.status || 'Active',
       });
       setPreview(typeof p.image === 'string' ? p.image : null);
@@ -146,7 +133,7 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
       setImage(null);
     }
     setErrors({});
-  }, [open, editProduct, totalSold]);
+  }, [open, editProduct]);
 
   const handleChange = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -178,15 +165,10 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
 
     setSaving(true);
     try {
-      // ✅ Convert form's stock value back to the actual moq
-      const finalForm = { ...form };
-      if (isEdit) {
-        const stockVal = Number(form.moq);
-        finalForm.moq = String(stockVal + totalSold);   // moq = displayed stock + sold
-      }
-
+      // No need to add totalSold – the form.moq holds the new desired stock
+      // (backend will treat it as the total stock to set)
       const fd = new FormData();
-      Object.entries(finalForm).forEach(([key, val]) => {
+      Object.entries(form).forEach(([key, val]) => {
         if (val !== '' && val !== null && val !== undefined) {
           fd.append(key, val);
         }
@@ -230,7 +212,6 @@ const ProductFormModal = ({ open, onClose, editProduct }) => {
     }
   };
 
-  // Reusable input builder
   const renderInput = (label, field, options = {}) => {
     const { type = 'text', step, ...rest } = options;
     const id = `field-${field}`;
@@ -419,16 +400,13 @@ const ProductsPage = () => {
 
   useEffect(() => {
     dispatch(fetchProducts());
-    dispatch(fetchInvoices("all"));
+    dispatch(fetchInvoices("all")); // still fetch invoices for potential reporting, but stock computed differently
   }, [dispatch]);
 
+  // Stock now comes directly from the product's moq field (already live stock)
   const getCurrentStock = (productId, moq) => {
-    if (!invoices || invoices.length === 0) return moq;
-    const totalSold = invoices.reduce((sum, inv) => {
-      const item = inv.items?.find(i => i.productId === productId);
-      return sum + (item?.qty || 0);
-    }, 0);
-    return Math.max(0, moq - totalSold);
+    // Backend already updated moq after each sale, so just return it
+    return moq ?? 0;
   };
 
   const filtered = products.filter((p) => {
@@ -510,7 +488,7 @@ const ProductsPage = () => {
         </div>
       )}
 
-      {/* ✅ Key forces remount when switching between add/edit */}
+      {/* Key forces remount when switching between add/edit */}
       <ProductFormModal
         key={editTarget?._id || 'new'}
         open={modal}
