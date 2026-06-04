@@ -556,6 +556,7 @@ const CAT_OPTS = [
   { value: 'Radnus Battery', label: 'Radnus Battery' },
   { value: 'Connector', label: 'Connector' },
   { value: 'Tools', label: 'Tools' },
+  { value: 'Battery', label: 'Battery' },
 ];
 
 const STATUS_OPTS = [
