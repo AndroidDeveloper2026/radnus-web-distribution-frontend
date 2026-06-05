@@ -1,3 +1,4 @@
+// // src/pages/Invoice/InvoicePage.js
 // import React, { useRef, useState } from "react";
 // import { useLocation, useNavigate } from "react-router-dom";
 // import html2pdf from "html2pdf.js";
@@ -45,12 +46,11 @@
 //     fontSize: "0.75rem",
 //     borderTop: "2px solid #000",
 //   },
-//   // 🆕 Light gray header – black text (matches reference)
 //   th: {
 //     border: "1px solid #000",
 //     padding: "0.45rem 0.4rem",
-//     background: "#f0f0f0",         // light gray
-//     color: "#000000",              // black text
+//     background: "#f0f0f0",
+//     color: "#000000",
 //     WebkitTextFillColor: "#000000",
 //     fontWeight: "800",
 //     textTransform: "uppercase",
@@ -70,9 +70,7 @@
 //   },
 // };
 
-// // ============================================================
 // // Helper: numerical amount to words (INR)
-// // ============================================================
 // const amountInWords = (num) => {
 //   const ones = [
 //     "",
@@ -133,15 +131,77 @@
 //   );
 // };
 
+// // Helper function to parse buyer name and extract customer name & shop name
+// const parseBuyerName = (buyerName) => {
+//   if (!buyerName || buyerName === "—") {
+//     return { customerName: buyerName, shopName: null };
+//   }
+  
+//   // Check if it contains parentheses (format: "CustomerName (ShopName)")
+//   const hasParentheses = buyerName.includes('(') && buyerName.includes(')');
+  
+//   if (hasParentheses) {
+//     // Extract customer name and shop name from "CustomerName (ShopName)"
+//     const customerMatch = buyerName.match(/^([^(]+?)\s*\(/);
+//     const shopMatch = buyerName.match(/\(([^)]+)\)/);
+//     const customerName = customerMatch ? customerMatch[1].trim() : buyerName;
+//     const shopName = shopMatch ? shopMatch[1].trim() : '';
+//     return { customerName, shopName };
+//   } else {
+//     // It's just a regular customer name
+//     return { customerName: buyerName, shopName: null };
+//   }
+// };
+
+// const DisplayBuyerInfo = ({ name, phone, address, city, state }) => {
+//   const { customerName, shopName } = parseBuyerName(name);
+  
+//   return (
+//     <div style={{ ...S.text, margin: 0, padding: 0 }}>
+//       {/* Display Customer Name first */}
+//       {customerName && customerName !== "—" && (
+//         <div style={{ margin: "2px 0", fontSize: "0.78rem", fontWeight: "600", lineHeight: "1.4" }}>
+//           {customerName}
+//         </div>
+//       )}
+      
+//       {/* Display Shop Name underneath (without parentheses) */}
+//       {shopName && (
+//         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
+//           {shopName}
+//         </div>
+//       )}
+      
+//       {/* Display Phone */}
+//       {phone && (
+//         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
+//           {phone}
+//         </div>
+//       )}
+      
+//       {/* Display Address */}
+//       {address && address !== "—" && (
+//         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
+//           {address}
+//         </div>
+//       )}
+      
+//       {/* Display City & State */}
+//       {city && state && (
+//         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
+//           {[city, state].filter(Boolean).join(" - ")}
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
 // const InvoicePage = () => {
 //   const location = useLocation();
 //   const navigate = useNavigate();
 //   const { theme } = useTheme();
 //   const isDark = theme === "dark";
 
-//   // ----------------------------------------------------------
-//   // Extract route state (with fallbacks)
-//   // ----------------------------------------------------------
 //   const {
 //     invoiceNumber,
 //     items = [],
@@ -162,13 +222,11 @@
 //   const componentRef = useRef();
 //   const [saveMessage, setSaveMessage] = useState("");
 
-//   // ----------------------------------------------------------
-//   // Computed values
-//   // ----------------------------------------------------------
 //   const discountedSubtotal = total - discount;
 //   const grandTotal = discountedSubtotal + courierCharge;
 //   const totalQty = items.reduce((s, i) => s + i.qty, 0);
 
+//   // Format buyer line for meta table (simple format)
 //   const buyerLine1 = buyerName + (buyerPhone ? ` - ${buyerPhone}` : "");
 //   const buyerLine2 = buyerAddress || "";
 //   const buyerLine3 = [buyerCity, buyerState].filter(Boolean).join(" - ");
@@ -185,16 +243,11 @@
 //     return `${referenceNo} dt. ${d}`;
 //   };
 
-//   // ----------------------------------------------------------
-//   // Force **all** child elements to pure black / white.
-//   // Used before html2canvas / PDF capture and inside print clone.
-//   // ----------------------------------------------------------
 //   const forceInlineColours = (root) => {
 //     if (!root) return;
 //     const BLACK = "#000000";
 //     const WHITE = "#ffffff";
 
-//     // Remove any inherited theme classes / variables
 //     root.style.all = "initial";
 //     root.style.display = "block";
 //     root.style.background = WHITE;
@@ -202,11 +255,9 @@
 //     root.style.fontFamily = "Arial, sans-serif";
 //     root.style.WebkitTextFillColor = BLACK;
 
-//     // Walk every descendant and set explicit colours
 //     root.querySelectorAll("*").forEach((el) => {
 //       el.style.setProperty("color", BLACK, "important");
 //       el.style.setProperty("-webkit-text-fill-color", BLACK, "important");
-//       // Keep background transparent on most elements, only table cells get explicit bg
 //       if (
 //         !el.classList.contains("invoice-outer") &&
 //         !el.classList.contains("invoice-container")
@@ -215,11 +266,9 @@
 //       }
 //     });
 
-//     // Outer container must stay white with a border
 //     root.style.setProperty("background-color", WHITE, "important");
 //     root.style.setProperty("color", BLACK, "important");
 
-//     // 🆕 Table header cells -> light gray bg, black text
 //     root.querySelectorAll(".items-table th").forEach((th) => {
 //       th.style.setProperty("background-color", "#f0f0f0", "important");
 //       th.style.setProperty("color", BLACK, "important");
@@ -228,7 +277,6 @@
 //       th.style.setProperty("print-color-adjust", "exact", "important");
 //     });
 
-//     // Table body cells -> white bg, black text (alternating handled below)
 //     root.querySelectorAll(".items-table td").forEach((td) => {
 //       td.style.setProperty("background-color", WHITE, "important");
 //       td.style.setProperty("color", BLACK, "important");
@@ -241,9 +289,6 @@
 //     });
 //   };
 
-//   // ----------------------------------------------------------
-//   // Restore original inline colour changes (if needed)
-//   // ----------------------------------------------------------
 //   const restoreInlineColours = (root) => {
 //     if (!root) return;
 //     root.querySelectorAll("*").forEach((el) => {
@@ -253,12 +298,9 @@
 //     });
 //     root.style.removeProperty("background-color");
 //     root.style.removeProperty("color");
-//     root.style.all = ""; // revert 'all: initial' reset
+//     root.style.all = "";
 //   };
 
-//   // ----------------------------------------------------------
-//   // Print handler – creates fully isolated new window
-//   // ----------------------------------------------------------
 //   const handlePrint = () => {
 //     const invoiceHTML = componentRef.current.innerHTML;
 //     const printWindow = window.open("", "_blank", "width=900,height=700");
@@ -291,7 +333,6 @@
 //             margin: 0.5rem 0;
 //             font-size: 0.75rem;
 //           }
-//           /* 🆕 Light gray header with black text */
 //           .items-table th {
 //             border: 1px solid #000;
 //             padding: 0.45rem 0.4rem;
@@ -330,7 +371,6 @@
 //             -webkit-text-fill-color: #000000;
 //           }
 
-//           /* Override any potential inherited styles */
 //           * {
 //             color: #000000 !important;
 //             -webkit-text-fill-color: #000000 !important;
@@ -355,7 +395,6 @@
 //             background: #f5f5f5 !important;
 //           }
 
-//           /* Page-break for print */
 //           .items-table tr {
 //             page-break-inside: avoid;
 //           }
@@ -368,7 +407,6 @@
 //         ${invoiceHTML}
 //         <script>
 //           window.onload = function() {
-//             // Final enforcement – light gray header, black text
 //             document.querySelectorAll('th').forEach(function(th) {
 //               th.style.cssText = 'background:#f0f0f0!important;color:#000000!important;-webkit-text-fill-color:#000000!important;border:1px solid #000;padding:0.45rem 0.4rem;font-weight:800;text-transform:uppercase;font-size:0.72rem;letter-spacing:0.6px;text-align:left;-webkit-print-color-adjust:exact;print-color-adjust:exact;';
 //             });
@@ -387,9 +425,6 @@
 //     printWindow.document.close();
 //   };
 
-//   // ----------------------------------------------------------
-//   // PDF save handler – uses html2pdf with absolute colour lock
-//   // ----------------------------------------------------------
 //   const handleSavePDF = () => {
 //     const root = componentRef.current;
 //     forceInlineColours(root);
@@ -405,11 +440,8 @@
 //         logging: false,
 //         backgroundColor: "#ffffff",
 //         onclone: (clonedDoc) => {
-//           // The cloned document might still carry theme classes;
-//           // we force‑inline colours again.
 //           const cloneRoot = clonedDoc.querySelector(".invoice-container");
 //           if (cloneRoot) {
-//             // Remove theme classes / variables completely
 //             cloneRoot.style.all = "initial";
 //             cloneRoot.style.display = "block";
 //             cloneRoot.style.background = "#ffffff";
@@ -434,9 +466,6 @@
 //       .catch(() => restoreInlineColours(root));
 //   };
 
-//   // ----------------------------------------------------------
-//   // No invoice data fallback
-//   // ----------------------------------------------------------
 //   if (!invoiceNumber) {
 //     return (
 //       <div style={{ padding: "2rem", color: "var(--text-primary)" }}>
@@ -445,16 +474,11 @@
 //     );
 //   }
 
-//   // Helper: returns inline style for a table cell depending on row index
 //   const tdStyle = (rowIdx, isTotal = false) =>
 //     isTotal ? S.tdTotal : rowIdx % 2 === 0 ? S.tdWhite : S.tdGrey;
 
-//   // ----------------------------------------------------------
-//   // Render
-//   // ----------------------------------------------------------
 //   return (
 //     <div className={`invoice-page ${isDark ? "dark" : ""}`}>
-//       {/* ── Toolbar (hidden during print) ── */}
 //       <div className="invoice-actions">
 //         <button onClick={() => navigate(-1)} className="back-btn">
 //           ← Back
@@ -475,7 +499,6 @@
 //         </div>
 //       )}
 
-//       {/* ── Invoice Document – every element carries explicit inline colours ── */}
 //       <div ref={componentRef} className="invoice-container" style={S.wrap}>
 //         <div className="invoice-outer" style={S.wrap}>
 //           {/* Header */}
@@ -500,7 +523,6 @@
 //             <p style={{ ...S.text, margin: "2px 0", fontSize: "0.75rem" }}>
 //               E-Mail: sundar12134@gmail.com
 //             </p>
-            
 //           </div>
 
 //           {/* Title */}
@@ -519,7 +541,7 @@
 
 //           {/* Two-column: consignee + meta */}
 //           <div style={{ display: "flex", borderBottom: "1px solid #000" }}>
-//             {/* Left */}
+//             {/* Left - Consignee and Buyer sections */}
 //             <div
 //               style={{
 //                 width: "50%",
@@ -537,19 +559,13 @@
 //               >
 //                 Consignee (Ship to)
 //               </div>
-//               <p style={{ ...S.text, margin: "2px 0", fontSize: "0.78rem" }}>
-//                 {buyerLine1}
-//               </p>
-//               {buyerLine2 && (
-//                 <p style={{ ...S.text, margin: "2px 0", fontSize: "0.78rem" }}>
-//                   {buyerLine2}
-//                 </p>
-//               )}
-//               {buyerLine3 && (
-//                 <p style={{ ...S.text, margin: "2px 0", fontSize: "0.78rem" }}>
-//                   {buyerLine3}
-//                 </p>
-//               )}
+//               <DisplayBuyerInfo 
+//                 name={buyerName}
+//                 phone={buyerPhone}
+//                 address={buyerAddress}
+//                 city={buyerCity}
+//                 state={buyerState}
+//               />
 
 //               <div
 //                 style={{
@@ -561,19 +577,13 @@
 //               >
 //                 Buyer (Bill to)
 //               </div>
-//               <p style={{ ...S.text, margin: "2px 0", fontSize: "0.78rem" }}>
-//                 {buyerLine1}
-//               </p>
-//               {buyerLine2 && (
-//                 <p style={{ ...S.text, margin: "2px 0", fontSize: "0.78rem" }}>
-//                   {buyerLine2}
-//                 </p>
-//               )}
-//               {buyerLine3 && (
-//                 <p style={{ ...S.text, margin: "2px 0", fontSize: "0.78rem" }}>
-//                   {buyerLine3}
-//                 </p>
-//               )}
+//               <DisplayBuyerInfo 
+//                 name={buyerName}
+//                 phone={buyerPhone}
+//                 address={buyerAddress}
+//                 city={buyerCity}
+//                 state={buyerState}
+//               />
 //             </div>
 
 //             {/* Right — meta table */}
@@ -617,7 +627,7 @@
 //             </div>
 //           </div>
 
-//           {/* Items table */}
+//           {/* Items table - preserving original order */}
 //           <table
 //             className="items-table"
 //             style={{
@@ -663,29 +673,15 @@
 //                 </tr>
 //               )}
 //               <tr>
-//                 <td
-//                   style={tdStyle(items.length + (discount > 0 ? 1 : 0))}
-//                 ></td>
-//                 <td
-//                   style={tdStyle(items.length + (discount > 0 ? 1 : 0))}
-//                 >
+//                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
+//                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}>
 //                   COURIER CHARGE
 //                 </td>
-//                 <td
-//                   style={tdStyle(items.length + (discount > 0 ? 1 : 0))}
-//                 ></td>
-//                 <td
-//                   style={tdStyle(items.length + (discount > 0 ? 1 : 0))}
-//                 ></td>
-//                 <td
-//                   style={tdStyle(items.length + (discount > 0 ? 1 : 0))}
-//                 ></td>
-//                 <td
-//                   style={tdStyle(items.length + (discount > 0 ? 1 : 0))}
-//                 ></td>
-//                 <td
-//                   style={tdStyle(items.length + (discount > 0 ? 1 : 0))}
-//                 >
+//                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
+//                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
+//                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
+//                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
+//                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}>
 //                   ₹{courierCharge}.00
 //                 </td>
 //               </tr>
@@ -776,7 +772,7 @@
 
 // export default InvoicePage;
 
-//++++++++++++++++++++++++++++++
+//-----------------------------------
 
 // src/pages/Invoice/InvoicePage.js
 import React, { useRef, useState } from "react";
@@ -889,9 +885,7 @@ const amountInWords = (num) => {
   if (num === 0) return "Zero";
   if (num < 20) return ones[num];
   if (num < 100)
-    return (
-      tens[Math.floor(num / 10)] + (num % 10 ? " " + ones[num % 10] : "")
-    );
+    return tens[Math.floor(num / 10)] + (num % 10 ? " " + ones[num % 10] : "");
   if (num < 1000)
     return (
       ones[Math.floor(num / 100)] +
@@ -911,63 +905,56 @@ const amountInWords = (num) => {
   );
 };
 
-// Helper function to parse buyer name and extract customer name & shop name
-const parseBuyerName = (buyerName) => {
-  if (!buyerName || buyerName === "—") {
-    return { customerName: buyerName, shopName: null };
-  }
+// Updated DisplayBuyerInfo component - Customer name first, then shop name on next line
+const DisplayBuyerInfo = ({ name, phone, address, city, state, customerType, shopName }) => {
+  // Parse the buyer name if it's in "CustomerName (ShopName)" format
+  let customerDisplayName = name;
+  let shopDisplayName = null;
   
-  // Check if it contains parentheses (format: "CustomerName (ShopName)")
-  const hasParentheses = buyerName.includes('(') && buyerName.includes(')');
-  
-  if (hasParentheses) {
-    // Extract customer name and shop name from "CustomerName (ShopName)"
-    const customerMatch = buyerName.match(/^([^(]+?)\s*\(/);
-    const shopMatch = buyerName.match(/\(([^)]+)\)/);
-    const customerName = customerMatch ? customerMatch[1].trim() : buyerName;
-    const shopName = shopMatch ? shopMatch[1].trim() : '';
-    return { customerName, shopName };
-  } else {
-    // It's just a regular customer name
-    return { customerName: buyerName, shopName: null };
+  // Check if the name contains parentheses (format: "CustomerName (ShopName)")
+  if (name && name.includes('(') && name.includes(')')) {
+    const customerMatch = name.match(/^([^(]+?)\s*\(/);
+    const shopMatch = name.match(/\(([^)]+)\)/);
+    customerDisplayName = customerMatch ? customerMatch[1].trim() : name;
+    shopDisplayName = shopMatch ? shopMatch[1].trim() : null;
+  } else if (customerType === 'shop' && shopName) {
+    // If we have separate customerType and shopName
+    customerDisplayName = name;
+    shopDisplayName = shopName;
   }
-};
-
-const DisplayBuyerInfo = ({ name, phone, address, city, state }) => {
-  const { customerName, shopName } = parseBuyerName(name);
   
   return (
     <div style={{ ...S.text, margin: 0, padding: 0 }}>
-      {/* Display Customer Name first */}
-      {customerName && customerName !== "—" && (
+      {/* Display Customer Name first - Line 1 */}
+      {customerDisplayName && customerDisplayName !== "—" && (
         <div style={{ margin: "2px 0", fontSize: "0.78rem", fontWeight: "600", lineHeight: "1.4" }}>
-          {customerName}
+          {customerDisplayName}
         </div>
       )}
       
-      {/* Display Shop Name underneath (without parentheses) */}
-      {shopName && (
+      {/* Display Shop Name on second line - NO parentheses */}
+      {shopDisplayName && (
         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
-          {shopName}
+          {shopDisplayName}
         </div>
       )}
       
-      {/* Display Phone */}
-      {phone && (
+      {/* Display Phone - Line 3 */}
+      {phone && phone !== "—" && (
         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
           {phone}
         </div>
       )}
       
-      {/* Display Address */}
+      {/* Display Address - Line 4 */}
       {address && address !== "—" && (
         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
           {address}
         </div>
       )}
       
-      {/* Display City & State */}
-      {city && state && (
+      {/* Display City & State - Line 5 */}
+      {(city && city !== "—" || state && state !== "—") && (
         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
           {[city, state].filter(Boolean).join(" - ")}
         </div>
@@ -997,6 +984,8 @@ const InvoicePage = () => {
     discount = 0,
     salesperson = "",
     referenceNo = "",
+    customerType = "",
+    shopName = "",
   } = location.state || {};
 
   const componentRef = useRef();
@@ -1006,11 +995,7 @@ const InvoicePage = () => {
   const grandTotal = discountedSubtotal + courierCharge;
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
 
-  // Format buyer line for meta table (simple format)
-  const buyerLine1 = buyerName + (buyerPhone ? ` - ${buyerPhone}` : "");
-  const buyerLine2 = buyerAddress || "";
   const buyerLine3 = [buyerCity, buyerState].filter(Boolean).join(" - ");
-
   const grandTotalWords = `INR ${amountInWords(Math.round(grandTotal))} Only`;
 
   const formatReferenceNo = () => {
@@ -1295,7 +1280,7 @@ const InvoicePage = () => {
               RADNUS COMMUNICATION
             </h2>
             <p style={{ ...S.text, margin: "2px 0", fontSize: "0.75rem" }}>
-              No.242/44, MG Road, Sinnaya Plaza, Near Fish Market
+              No.242/244, MG Road, Sinnaya Plaza, Near Fish Market
             </p>
             <p style={{ ...S.text, margin: "2px 0", fontSize: "0.75rem" }}>
               Puducherry - 605001 &nbsp;|&nbsp; State Name: Puducherry, Code: 605001
@@ -1345,6 +1330,8 @@ const InvoicePage = () => {
                 address={buyerAddress}
                 city={buyerCity}
                 state={buyerState}
+                customerType={customerType}
+                shopName={shopName}
               />
 
               <div
@@ -1363,6 +1350,8 @@ const InvoicePage = () => {
                 address={buyerAddress}
                 city={buyerCity}
                 state={buyerState}
+                customerType={customerType}
+                shopName={shopName}
               />
             </div>
 
@@ -1398,7 +1387,7 @@ const InvoicePage = () => {
                         }}
                       >
                         {label}
-                      </td>
+                       </td>
                       <td style={S.metaTd}>{value}</td>
                     </tr>
                   ))}

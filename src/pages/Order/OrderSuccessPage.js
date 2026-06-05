@@ -43,6 +43,7 @@
 //   { id: 6, name: 'KALAIVANI' },
 //   { id: 7, name: 'SUNDER SIR' },
 //   { id: 8, name: 'PAVITHRA' },
+//   { id: 9, name: 'SARANYA' },
 // ];
 
 // const PAYMENT_MODES = [
@@ -225,6 +226,7 @@
 //     setConfirmVisible(false);
 
 //     try {
+//       // Preserve the original order from cartItems
 //       const invoiceItems = cartItems.map((item) => ({
 //         productId: item.id,
 //         name: item.name,
@@ -287,14 +289,13 @@
 //       navigate('/invoice', {
 //         state: {
 //           invoiceNumber,
-//           items: cartItems,
+//           items: cartItems, // Pass cartItems directly to preserve order
 //           total: grandTotal,
 //           paymentMode: selectedPaymentMode?.label || initialPaymentMode,
 //           date: date,
-//           buyerName:
-//             customer?.type === 'shop'
-//               ? `${customer.shopName} (${customer.name})`
-//               : customer?.name,
+//           buyerName: customer?.type === 'shop' 
+//             ? `${customer.shopName} (${customer.name})`
+//             : customer?.name || '—',
 //           buyerPhone,
 //           buyerAddress: customer?.address || '',
 //           buyerCity: customer?.city || '',
@@ -440,7 +441,6 @@
 //                   }}>Edit</button>
 //                 </div>
 //                 <div className="customer-name">{customer.type === 'shop' ? `${customer.shopName} (${customer.name})` : customer.name}</div>
-//                 {/* Address line with enhanced visibility */}
 //                 {customer.address && (
 //                   <div className="customer-sub address-line">
 //                     <MapPin size={14} />
@@ -537,7 +537,6 @@
 //               </div>
 //               <input type="text" placeholder="Customer Name *" value={newName} onChange={(e) => setNewName(e.target.value)} className="modal-input" />
 //               {customerType === 'shop' && <input type="text" placeholder="Shop Name *" value={shopName} onChange={(e) => setShopName(e.target.value)} className="modal-input" />}
-//               {/* Address field with explicit label for visibility */}
 //               <label className="field-label">Delivery Address</label>
 //               <textarea
 //                 placeholder="Street, landmark, area…"
@@ -574,7 +573,6 @@
 //               </div>
 //               <input type="text" placeholder="Customer Name *" value={editName} onChange={(e) => setEditName(e.target.value)} className="modal-input" />
 //               {editCustomerType === 'shop' && <input type="text" placeholder="Shop Name *" value={editShopName} onChange={(e) => setEditShopName(e.target.value)} className="modal-input" />}
-//               {/* Address field with explicit label */}
 //               <label className="field-label">Delivery Address</label>
 //               <textarea
 //                 placeholder="Street, landmark, area…"
@@ -608,7 +606,7 @@
 //         </div>
 //       )}
 
-//       {/* Confirm Modal – Improved Professional Style */}
+//       {/* Confirm Modal */}
 //       {confirmVisible && (
 //         <div className="modal-overlay" onClick={() => setConfirmVisible(false)}>
 //           <div className="modal-content confirm-modal" onClick={(e) => e.stopPropagation()}>
@@ -624,7 +622,13 @@
 //               <p>Please confirm the order details before proceeding.</p>
 //               <div className="confirm-info">
 //                 <div><strong>Reference No:</strong> <span>{referenceNo}</span></div>
-//                 <div><strong>Buyer:</strong> <span>{customer?.type === 'shop' ? `${customer.shopName} (${customer.name})` : customer?.name || '—'}</span></div>
+//                 <div><strong>Buyer:</strong> 
+//                   <span>
+//                     {customer?.type === 'shop' 
+//                       ? `${customer.shopName} (${customer.name})` 
+//                       : customer?.name || '—'}
+//                   </span>
+//                 </div>
 //                 <div><strong>Phone:</strong> <span>{buyerPhone}</span></div>
 //                 <div><strong>Address:</strong> <span>{customer?.address || '—'}</span></div>
 //                 <div><strong>City/State:</strong> <span>{[customer?.city, customer?.state].filter(Boolean).join(', ') || '—'}</span></div>
@@ -651,7 +655,7 @@
 
 // export default OrderSuccessPage;
 
-//+++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++
 
 // src/pages/Order/OrderSuccessPage.js
 import React, { useState, useEffect, useRef } from 'react';
@@ -876,103 +880,106 @@ const OrderSuccessPage = () => {
     );
   };
 
-  const goToInvoice = async () => {
-    setIsConfirming(true);
-    setConfirmVisible(false);
+  // In OrderSuccessPage.js - Update the goToInvoice function navigate section (around line 200-230)
 
-    try {
-      // Preserve the original order from cartItems
-      const invoiceItems = cartItems.map((item) => ({
-        productId: item.id,
-        name: item.name,
-        qty: item.qty,
-        price: item.price,
-      }));
+const goToInvoice = async () => {
+  setIsConfirming(true);
+  setConfirmVisible(false);
 
-      const subtotal = grandTotal;
-      const discountAmount = parseFloat(discount) || 0;
-      const afterDiscount = Math.max(subtotal - discountAmount, 0);
-      const courier = parseFloat(courierCharge) || 0;
-      const totalWithCourier = afterDiscount + courier;
+  try {
+    // Preserve the original order from cartItems
+    const invoiceItems = cartItems.map((item) => ({
+      productId: item.id,
+      name: item.name,
+      qty: item.qty,
+      price: item.price,
+    }));
 
-      const finalShipToName = sameAsBuyer
-        ? customer?.type === 'shop'
-          ? customer.shopName
-          : customer?.name
-        : shipToName;
-      const finalShipToPhone = sameAsBuyer ? buyerPhone : shipToPhone;
-      const finalShipToAddress = sameAsBuyer ? customer?.address || '' : shipToAddress;
-      const finalShipToCity = sameAsBuyer ? customer?.city || '' : shipToCity;
-      const finalShipToState = sameAsBuyer ? customer?.state || '' : shipToState;
+    const subtotal = grandTotal;
+    const discountAmount = parseFloat(discount) || 0;
+    const afterDiscount = Math.max(subtotal - discountAmount, 0);
+    const courier = parseFloat(courierCharge) || 0;
+    const totalWithCourier = afterDiscount + courier;
 
-      const payload = {
-        billerName: user?.name || 'Unknown',
-        items: invoiceItems,
-        totalAmount: totalWithCourier,
-        paymentMode: selectedPaymentMode?.label || initialPaymentMode,
-        status: 'completed',
-        customerPhone: buyerPhone,
-        customerName: customer?.name,
-        customerType: customer?.type,
-        shopName: customer?.shopName,
-        customerAddress: customer?.address,
-        customerCity: customer?.city,
-        customerState: customer?.state,
-        sameAsBuyer,
-        shippingAddress: {
-          name: finalShipToName,
-          phone: finalShipToPhone,
-          address: finalShipToAddress,
-          city: finalShipToCity,
-          state: finalShipToState,
-        },
-        subtotal,
-        discount: discountAmount,
-        courierCharge: courier,
-        salesperson: selectedSP?.name || '',
-        referenceNo: referenceNo || '',
-        invoiceDate: date || new Date().toISOString(),
-      };
+    const finalShipToName = sameAsBuyer
+      ? customer?.type === 'shop'
+        ? customer?.name
+        : customer?.name
+      : shipToName;
+    const finalShipToPhone = sameAsBuyer ? buyerPhone : shipToPhone;
+    const finalShipToAddress = sameAsBuyer ? customer?.address || '' : shipToAddress;
+    const finalShipToCity = sameAsBuyer ? customer?.city || '' : shipToCity;
+    const finalShipToState = sameAsBuyer ? customer?.state || '' : shipToState;
 
-      const invoiceRes = await API.post('/api/invoices', payload);
-      const invoiceNumber = invoiceRes.data.invoice.invoiceNumber;
+    const payload = {
+      billerName: user?.name || 'Unknown',
+      items: invoiceItems,
+      totalAmount: totalWithCourier,
+      paymentMode: selectedPaymentMode?.label || initialPaymentMode,
+      status: 'completed',
+      customerPhone: buyerPhone,
+      customerName: customer?.name,
+      customerType: customer?.type,
+      shopName: customer?.shopName,
+      customerAddress: customer?.address,
+      customerCity: customer?.city,
+      customerState: customer?.state,
+      sameAsBuyer,
+      shippingAddress: {
+        name: finalShipToName,
+        phone: finalShipToPhone,
+        address: finalShipToAddress,
+        city: finalShipToCity,
+        state: finalShipToState,
+      },
+      subtotal,
+      discount: discountAmount,
+      courierCharge: courier,
+      salesperson: selectedSP?.name || '',
+      referenceNo: referenceNo || '',
+      invoiceDate: date || new Date().toISOString(),
+    };
 
-      if (reduceStock && typeof reduceStock === 'function') {
-        await dispatch(reduceStock(cartItems)).unwrap();
-      }
+    const invoiceRes = await API.post('/api/invoices', payload);
+    const invoiceNumber = invoiceRes.data.invoice.invoiceNumber;
 
-      navigate('/invoice', {
-        state: {
-          invoiceNumber,
-          items: cartItems, // Pass cartItems directly to preserve order
-          total: grandTotal,
-          paymentMode: selectedPaymentMode?.label || initialPaymentMode,
-          date: date,
-          buyerName: customer?.type === 'shop' 
-            ? `${customer.shopName} (${customer.name})`
-            : customer?.name || '—',
-          buyerPhone,
-          buyerAddress: customer?.address || '',
-          buyerCity: customer?.city || '',
-          buyerState: customer?.state || '',
-          courierCharge: courier,
-          discount: discountAmount,
-          salesperson: selectedSP?.name || '',
-          referenceNo,
-          shipToName: finalShipToName,
-          shipToPhone: finalShipToPhone,
-          shipToAddress: finalShipToAddress,
-          shipToCity: finalShipToCity,
-          shipToState: finalShipToState,
-        },
-      });
-    } catch (err) {
-      console.error(err);
-      alert('Failed to confirm order. Please try again.');
-    } finally {
-      setIsConfirming(false);
+    if (reduceStock && typeof reduceStock === 'function') {
+      await dispatch(reduceStock(cartItems)).unwrap();
     }
-  };
+
+    // Navigate to invoice with all required data
+    navigate('/invoice', {
+      state: {
+        invoiceNumber,
+        items: cartItems,
+        total: grandTotal,
+        paymentMode: selectedPaymentMode?.label || initialPaymentMode,
+        date: date,
+        buyerName: customer?.name || '—',  // Just the customer name
+        buyerPhone,
+        buyerAddress: customer?.address || '',
+        buyerCity: customer?.city || '',
+        buyerState: customer?.state || '',
+        courierCharge: courier,
+        discount: discountAmount,
+        salesperson: selectedSP?.name || '',
+        referenceNo,
+        shipToName: finalShipToName,
+        shipToPhone: finalShipToPhone,
+        shipToAddress: finalShipToAddress,
+        shipToCity: finalShipToCity,
+        shipToState: finalShipToState,
+        customerType: customer?.type,
+        shopName: customer?.shopName,  // Shop name passed separately
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    alert('Failed to confirm order. Please try again.');
+  } finally {
+    setIsConfirming(false);
+  }
+};
 
   const discountAmount = parseFloat(discount) || 0;
   const subtotal = grandTotal || 0;
@@ -1095,7 +1102,7 @@ const OrderSuccessPage = () => {
                     setEditModalVisible(true);
                   }}>Edit</button>
                 </div>
-                <div className="customer-name">{customer.type === 'shop' ? `${customer.shopName} (${customer.name})` : customer.name}</div>
+                <div className="customer-name">{customer.type === 'shop' ? `${customer.name} (${customer.shopName})` : customer.name}</div>
                 {customer.address && (
                   <div className="customer-sub address-line">
                     <MapPin size={14} />
@@ -1280,7 +1287,7 @@ const OrderSuccessPage = () => {
                 <div><strong>Buyer:</strong> 
                   <span>
                     {customer?.type === 'shop' 
-                      ? `${customer.shopName} (${customer.name})` 
+                      ? `${customer?.name} (${customer?.shopName})` 
                       : customer?.name || '—'}
                   </span>
                 </div>

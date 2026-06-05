@@ -1268,7 +1268,7 @@ const InvoiceViewPage = () => {
           <!-- Company Header -->
           <div style="text-align:center; border-bottom:1px solid #000; padding-bottom:0.5rem;">
             <h2 style="margin:0; font-size:1.2rem;">RADNUS COMMUNICATION</h2>
-            <p style="font-size:0.75rem;">No.242/44, MG Road, Sinnaya Plaza, Near Fish Market</p>
+            <p style="font-size:0.75rem;">No.242/244, MG Road, Sinnaya Plaza, Near Fish Market</p>
             <p style="font-size:0.75rem;">Puducherry - 605001 &nbsp;|&nbsp; State Name: Puducherry, Code: 605001</p>
             <p style="font-size:0.75rem;">E-Mail: sundar12134@gmail.com</p>
           </div>
