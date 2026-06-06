@@ -1,865 +1,3 @@
-// // // src/pages/Reports/ExcelExportScreen.js
-// // import React, { useState, useEffect } from 'react';
-// // import { useDispatch, useSelector } from 'react-redux';
-// // import { useTheme } from '../../context/ThemeContext';
-// // import { 
-// //   Download, 
-// //   FileText, 
-// //   Package, 
-// //   Users, 
-// //   ShoppingCart,
-// //   TrendingUp,
-// //   Calendar,
-// //   X,
-// //   CheckCircle,
-// //   AlertCircle
-// // } from 'lucide-react';
-// // import {
-// //   exportInvoicesToExcel,
-// //   exportInvoiceItemsToExcel,
-// //   exportSalesReturnsToExcel,
-// //   exportSalesReturnItemsToExcel,
-// //   exportPurchaseReturnsToExcel,
-// //   exportProductsToExcel,
-// //   exportCustomersToExcel
-// // } from '../../utils/excelExport';
-// // import { fetchInvoices } from '../../services/features/invoice/invoiceSlice';
-// // import { fetchSalesReturns, fetchPurchaseReturns } from '../../services/features/returns/returnsSlice';
-// // import { fetchProducts } from '../../services/features/products/productSlice';
-// // import API from '../../services/API/api';
-// // import './ExcelExportScreen.css';
-
-// // const ExcelExportScreen = () => {
-// //   const dispatch = useDispatch();
-// //   const { theme } = useTheme();
-// //   const isDark = theme === 'dark';
-// //   const { user } = useSelector((state) => state.auth);
-  
-// //   // State for data
-// //   const [invoices, setInvoices] = useState([]);
-// //   const [salesReturns, setSalesReturns] = useState([]);
-// //   const [purchaseReturns, setPurchaseReturns] = useState([]);
-// //   const [products, setProducts] = useState([]);
-// //   const [customers, setCustomers] = useState([]);
-  
-// //   // Loading states
-// //   const [loading, setLoading] = useState({
-// //     invoices: false,
-// //     salesReturns: false,
-// //     purchaseReturns: false,
-// //     products: false,
-// //     customers: false
-// //   });
-  
-// //   // Filter states
-// //   const [dateRange, setDateRange] = useState({
-// //     fromDate: '',
-// //     toDate: ''
-// //   });
-// //   const [showDateFilter, setShowDateFilter] = useState(false);
-// //   const [exporting, setExporting] = useState(false);
-// //   const [successMessage, setSuccessMessage] = useState('');
-
-// //   // Report options
-// //   const reportOptions = [
-// //     {
-// //       id: 'invoices',
-// //       title: 'Invoices',
-// //       icon: FileText,
-// //       color: '#3b82f6',
-// //       description: 'Export all invoice details including customer info, amounts, and payment modes',
-// //       types: [
-// //         { id: 'summary', name: 'Summary Report', description: 'Basic invoice information' },
-// //         { id: 'detailed', name: 'Detailed Report', description: 'Invoice with item-wise details' }
-// //       ]
-// //     },
-// //     {
-// //       id: 'salesReturns',
-// //       title: 'Sales Returns',
-// //       icon: TrendingUp,
-// //       color: '#ef4444',
-// //       description: 'Export sales return records with customer and product details',
-// //       types: [
-// //         { id: 'summary', name: 'Summary Report', description: 'Basic return information' },
-// //         { id: 'detailed', name: 'Detailed Report', description: 'Returns with item-wise details' }
-// //       ]
-// //     },
-// //     {
-// //       id: 'purchaseReturns',
-// //       title: 'Purchase Returns',
-// //       icon: ShoppingCart,
-// //       color: '#f59e0b',
-// //       description: 'Export purchase return records with supplier details',
-// //       types: [
-// //         { id: 'summary', name: 'Summary Report', description: 'Basic purchase return information' }
-// //       ]
-// //     },
-// //     {
-// //       id: 'products',
-// //       title: 'Products',
-// //       icon: Package,
-// //       color: '#10b981',
-// //       description: 'Export product catalog with pricing and inventory details',
-// //       types: [
-// //         { id: 'summary', name: 'Products Report', description: 'Complete product list' }
-// //       ]
-// //     },
-// //     {
-// //       id: 'customers',
-// //       title: 'Customers',
-// //       icon: Users,
-// //       color: '#8b5cf6',
-// //       description: 'Export customer database with contact and address details',
-// //       types: [
-// //         { id: 'summary', name: 'Customers Report', description: 'Complete customer list' }
-// //       ]
-// //     }
-// //   ];
-
-// //   // Fetch data when component mounts
-// //   useEffect(() => {
-// //     fetchAllData();
-// //   }, []);
-
-// //   const fetchAllData = async () => {
-// //     const billerName = user?.role === 'Radnus' ? user?.name : '';
-    
-// //     // Fetch Invoices
-// //     setLoading(prev => ({ ...prev, invoices: true }));
-// //     try {
-// //       const result = await dispatch(fetchInvoices({ filter: 'all', billerName })).unwrap();
-// //       setInvoices(result?.data || []);
-// //     } catch (error) {
-// //       console.error('Error fetching invoices:', error);
-// //       setInvoices([]);
-// //     } finally {
-// //       setLoading(prev => ({ ...prev, invoices: false }));
-// //     }
-    
-// //     // Fetch Sales Returns
-// //     setLoading(prev => ({ ...prev, salesReturns: true }));
-// //     try {
-// //       const result = await dispatch(fetchSalesReturns({ billerName })).unwrap();
-// //       setSalesReturns(result || []);
-// //     } catch (error) {
-// //       console.error('Error fetching sales returns:', error);
-// //       setSalesReturns([]);
-// //     } finally {
-// //       setLoading(prev => ({ ...prev, salesReturns: false }));
-// //     }
-    
-// //     // Fetch Purchase Returns
-// //     setLoading(prev => ({ ...prev, purchaseReturns: true }));
-// //     try {
-// //       const result = await dispatch(fetchPurchaseReturns({ billerName })).unwrap();
-// //       setPurchaseReturns(result || []);
-// //     } catch (error) {
-// //       console.error('Error fetching purchase returns:', error);
-// //       setPurchaseReturns([]);
-// //     } finally {
-// //       setLoading(prev => ({ ...prev, purchaseReturns: false }));
-// //     }
-    
-// //     // Fetch Products
-// //     setLoading(prev => ({ ...prev, products: true }));
-// //     try {
-// //       const result = await dispatch(fetchProducts()).unwrap();
-// //       setProducts(result || []);
-// //     } catch (error) {
-// //       console.error('Error fetching products:', error);
-// //       setProducts([]);
-// //     } finally {
-// //       setLoading(prev => ({ ...prev, products: false }));
-// //     }
-    
-// //     // Fetch Customers - Direct API call
-// //     setLoading(prev => ({ ...prev, customers: true }));
-// //     try {
-// //       const response = await API.get('/api/customers');
-// //       setCustomers(response?.data || []);
-// //     } catch (error) {
-// //       console.error('Error fetching customers:', error);
-// //       setCustomers([]);
-// //     } finally {
-// //       setLoading(prev => ({ ...prev, customers: false }));
-// //     }
-// //   };
-
-// //   const filterDataByDate = (data, dateField = 'createdAt') => {
-// //     if (!data || !Array.isArray(data)) return [];
-// //     if (!dateRange.fromDate && !dateRange.toDate) return data;
-    
-// //     return data.filter(item => {
-// //       const itemDate = new Date(item?.[dateField] || item?.invoiceDate || item?.createdAt);
-// //       if (dateRange.fromDate && new Date(dateRange.fromDate) > itemDate) return false;
-// //       if (dateRange.toDate) {
-// //         const toDate = new Date(dateRange.toDate);
-// //         toDate.setHours(23, 59, 59, 999);
-// //         if (toDate < itemDate) return false;
-// //       }
-// //       return true;
-// //     });
-// //   };
-
-// //   const handleExport = async (reportId, type) => {
-// //     setExporting(true);
-// //     setSuccessMessage('');
-    
-// //     try {
-// //       let dataToExport = [];
-// //       let filename = '';
-      
-// //       switch(reportId) {
-// //         case 'invoices':
-// //           dataToExport = filterDataByDate(invoices, 'createdAt');
-// //           filename = `Invoices_${type === 'summary' ? 'Summary' : 'Detailed'}`;
-// //           if (type === 'summary') {
-// //             exportInvoicesToExcel(dataToExport, filename);
-// //           } else {
-// //             exportInvoiceItemsToExcel(dataToExport, filename);
-// //           }
-// //           break;
-          
-// //         case 'salesReturns':
-// //           dataToExport = filterDataByDate(salesReturns, 'createdAt');
-// //           filename = `Sales_Returns_${type === 'summary' ? 'Summary' : 'Detailed'}`;
-// //           if (type === 'summary') {
-// //             exportSalesReturnsToExcel(dataToExport, filename);
-// //           } else {
-// //             exportSalesReturnItemsToExcel(dataToExport, filename);
-// //           }
-// //           break;
-          
-// //         case 'purchaseReturns':
-// //           dataToExport = filterDataByDate(purchaseReturns, 'createdAt');
-// //           filename = 'Purchase_Returns_Report';
-// //           exportPurchaseReturnsToExcel(dataToExport, filename);
-// //           break;
-          
-// //         case 'products':
-// //           dataToExport = products;
-// //           filename = 'Products_Report';
-// //           exportProductsToExcel(dataToExport, filename);
-// //           break;
-          
-// //         case 'customers':
-// //           dataToExport = customers;
-// //           filename = 'Customers_Report';
-// //           exportCustomersToExcel(dataToExport, filename);
-// //           break;
-          
-// //         default:
-// //           break;
-// //       }
-      
-// //       setSuccessMessage(`${reportOptions.find(r => r.id === reportId)?.title} exported successfully!`);
-// //       setTimeout(() => setSuccessMessage(''), 3000);
-      
-// //     } catch (error) {
-// //       console.error('Export error:', error);
-// //       alert('Failed to export data. Please try again.');
-// //     } finally {
-// //       setExporting(false);
-// //     }
-// //   };
-
-// //   const getDataCount = (reportId) => {
-// //     try {
-// //       switch(reportId) {
-// //         case 'invoices': 
-// //           return Array.isArray(invoices) ? invoices.length : 0;
-// //         case 'salesReturns': 
-// //           return Array.isArray(salesReturns) ? salesReturns.length : 0;
-// //         case 'purchaseReturns': 
-// //           return Array.isArray(purchaseReturns) ? purchaseReturns.length : 0;
-// //         case 'products': 
-// //           return Array.isArray(products) ? products.length : 0;
-// //         case 'customers': 
-// //           return Array.isArray(customers) ? customers.length : 0;
-// //         default: 
-// //           return 0;
-// //       }
-// //     } catch (error) {
-// //       console.error('Error getting data count:', error);
-// //       return 0;
-// //     }
-// //   };
-
-// //   const getLoadingState = (reportId) => {
-// //     switch(reportId) {
-// //       case 'invoices': return loading.invoices;
-// //       case 'salesReturns': return loading.salesReturns;
-// //       case 'purchaseReturns': return loading.purchaseReturns;
-// //       case 'products': return loading.products;
-// //       case 'customers': return loading.customers;
-// //       default: return false;
-// //     }
-// //   };
-
-// //   const resetDateFilter = () => {
-// //     setDateRange({ fromDate: '', toDate: '' });
-// //     setShowDateFilter(false);
-// //   };
-
-// //   // Safe number formatting function
-// //   const formatNumber = (num) => {
-// //     if (num === undefined || num === null) return '0';
-// //     try {
-// //       return num.toLocaleString();
-// //     } catch (error) {
-// //       return String(num);
-// //     }
-// //   };
-
-// //   return (
-// //     <div className={`excel-export-screen ${isDark ? 'dark' : ''}`}>
-// //       <div className="export-header">
-// //         <div className="header-title">
-// //           <Download size={28} />
-// //           <h1>Excel Export Center</h1>
-// //         </div>
-// //         <p className="header-description">
-// //           Export your data to Excel format. Choose from various report types and export options.
-// //         </p>
-// //       </div>
-
-// //       {successMessage && (
-// //         <div className="success-toast">
-// //           <CheckCircle size={18} />
-// //           <span>{successMessage}</span>
-// //         </div>
-// //       )}
-
-// //       <div className="filters-bar">
-// //         <button 
-// //           className={`filter-toggle-btn ${showDateFilter ? 'active' : ''}`}
-// //           onClick={() => setShowDateFilter(!showDateFilter)}
-// //         >
-// //           <Calendar size={16} />
-// //           Date Filter
-// //           {showDateFilter && <X size={14} className="close-icon" onClick={(e) => {
-// //             e.stopPropagation();
-// //             resetDateFilter();
-// //           }} />}
-// //         </button>
-        
-// //         {showDateFilter && (
-// //           <div className="date-filter-panel">
-// //             <div className="date-input-group">
-// //               <label>From Date</label>
-// //               <input 
-// //                 type="date" 
-// //                 value={dateRange.fromDate}
-// //                 onChange={(e) => setDateRange({...dateRange, fromDate: e.target.value})}
-// //               />
-// //             </div>
-// //             <div className="date-input-group">
-// //               <label>To Date</label>
-// //               <input 
-// //                 type="date" 
-// //                 value={dateRange.toDate}
-// //                 onChange={(e) => setDateRange({...dateRange, toDate: e.target.value})}
-// //               />
-// //             </div>
-// //             {(dateRange.fromDate || dateRange.toDate) && (
-// //               <button className="clear-filter-btn" onClick={resetDateFilter}>
-// //                 Clear Filter
-// //               </button>
-// //             )}
-// //           </div>
-// //         )}
-// //       </div>
-
-// //       <div className="reports-grid">
-// //         {reportOptions.map((report) => {
-// //           const Icon = report.icon;
-// //           const isLoading = getLoadingState(report.id);
-// //           const dataCount = getDataCount(report.id);
-          
-// //           return (
-// //             <div key={report.id} className="report-card">
-// //               <div className="report-card-header" style={{ borderBottomColor: report.color }}>
-// //                 <div className="report-icon" style={{ backgroundColor: `${report.color}15`, color: report.color }}>
-// //                   <Icon size={24} />
-// //                 </div>
-// //                 <div className="report-info">
-// //                   <h3>{report.title}</h3>
-// //                   <p className="report-description">{report.description}</p>
-// //                 </div>
-// //               </div>
-              
-// //               <div className="report-stats">
-// //                 <span className="stat-label">Total Records:</span>
-// //                 <span className="stat-value">
-// //                   {isLoading ? 'Loading...' : formatNumber(dataCount)}
-// //                 </span>
-// //               </div>
-              
-// //               <div className="export-options">
-// //                 {report.types.map((type) => (
-// //                   <button
-// //                     key={type.id}
-// //                     className="export-option-btn"
-// //                     style={{ borderColor: report.color }}
-// //                     onClick={() => handleExport(report.id, type.id)}
-// //                     disabled={exporting || isLoading || dataCount === 0}
-// //                   >
-// //                     <Download size={16} style={{ color: report.color }} />
-// //                     <div className="export-option-text">
-// //                       <span className="export-name">{type.name}</span>
-// //                       <span className="export-desc">{type.description}</span>
-// //                     </div>
-// //                   </button>
-// //                 ))}
-// //               </div>
-              
-// //               {dataCount === 0 && !isLoading && (
-// //                 <div className="no-data-message">
-// //                   <AlertCircle size={14} />
-// //                   <span>No data available</span>
-// //                 </div>
-// //               )}
-// //             </div>
-// //           );
-// //         })}
-// //       </div>
-
-// //       <div className="export-tips">
-// //         <h4>Export Tips:</h4>
-// //         <ul>
-// //           <li>Use date filters to export data within a specific timeframe</li>
-// //           <li>Summary reports provide overview data without item-level details</li>
-// //           <li>Detailed reports include individual item/transaction details</li>
-// //           <li>Exported files will be saved with timestamp in filename</li>
-// //           <li>All exports are in .xlsx format compatible with Microsoft Excel</li>
-// //         </ul>
-// //       </div>
-// //     </div>
-// //   );
-// // };
-
-// // export default ExcelExportScreen;
-
-// //=======================================
-
-// // src/pages/Reports/ExcelExportScreen.js
-// import React, { useState, useEffect } from 'react';
-// import { useDispatch, useSelector } from 'react-redux';
-// import { useTheme } from '../../context/ThemeContext';
-// import { 
-//   Download, 
-//   FileText, 
-//   Package, 
-//   Users, 
-//   ShoppingCart,
-//   TrendingUp,
-//   Calendar,
-//   X,
-//   CheckCircle,
-//   AlertCircle
-// } from 'lucide-react';
-// import {
-//   exportInvoicesToExcel,
-//   exportInvoiceItemsToExcel,
-//   exportSalesReturnsToExcel,
-//   exportSalesReturnItemsToExcel,
-//   exportPurchaseReturnsToExcel,
-//   exportProductsToExcel,
-//   exportCustomersToExcel
-// } from '../../utils/excelExport';
-// import { fetchInvoices } from '../../services/features/invoice/invoiceSlice';
-// import { fetchSalesReturns, fetchPurchaseReturns } from '../../services/features/returns/returnsSlice';
-// import { fetchProducts } from '../../services/features/products/productSlice';
-// import API from '../../services/API/api';
-// import './ExcelExportScreen.css';
-
-// const ExcelExportScreen = () => {
-//   const dispatch = useDispatch();
-//   const { theme } = useTheme();
-//   const isDark = theme === 'dark';
-//   const { user } = useSelector((state) => state.auth);
-  
-//   // State for data
-//   const [invoices, setInvoices] = useState([]);
-//   const [salesReturns, setSalesReturns] = useState([]);
-//   const [purchaseReturns, setPurchaseReturns] = useState([]);
-//   const [products, setProducts] = useState([]);
-//   const [customers, setCustomers] = useState([]);
-  
-//   // Loading states
-//   const [loading, setLoading] = useState({
-//     invoices: false,
-//     salesReturns: false,
-//     purchaseReturns: false,
-//     products: false,
-//     customers: false
-//   });
-  
-//   // Filter states
-//   const [dateRange, setDateRange] = useState({
-//     fromDate: '',
-//     toDate: ''
-//   });
-//   const [showDateFilter, setShowDateFilter] = useState(false);
-//   const [exporting, setExporting] = useState(false);
-//   const [successMessage, setSuccessMessage] = useState('');
-
-//   // Report options
-//   const reportOptions = [
-//     {
-//       id: 'invoices',
-//       title: 'Invoices',
-//       icon: FileText,
-//       color: '#3b82f6',
-//       description: 'Export all invoice details including customer info, amounts, and payment modes',
-//       types: [
-//         { id: 'summary', name: 'Summary Report', description: 'Basic invoice information' },
-//         { id: 'detailed', name: 'Detailed Report', description: 'Invoice with item-wise details' }
-//       ]
-//     },
-//     {
-//       id: 'salesReturns',
-//       title: 'Sales Returns',
-//       icon: TrendingUp,
-//       color: '#ef4444',
-//       description: 'Export sales return records with customer and product details',
-//       types: [
-//         { id: 'summary', name: 'Summary Report', description: 'Basic return information' },
-//         { id: 'detailed', name: 'Detailed Report', description: 'Returns with item-wise details' }
-//       ]
-//     },
-//     {
-//       id: 'purchaseReturns',
-//       title: 'Purchase Returns',
-//       icon: ShoppingCart,
-//       color: '#f59e0b',
-//       description: 'Export purchase return records with supplier details',
-//       types: [
-//         { id: 'summary', name: 'Summary Report', description: 'Basic purchase return information' }
-//       ]
-//     },
-//     {
-//       id: 'products',
-//       title: 'Products',
-//       icon: Package,
-//       color: '#10b981',
-//       description: 'Export product catalog with pricing and inventory details',
-//       types: [
-//         { id: 'summary', name: 'Products Report', description: 'Complete product list' }
-//       ]
-//     },
-//     {
-//       id: 'customers',
-//       title: 'Customers',
-//       icon: Users,
-//       color: '#8b5cf6',
-//       description: 'Export customer database with contact and address details',
-//       types: [
-//         { id: 'summary', name: 'Customers Report', description: 'Complete customer list' }
-//       ]
-//     }
-//   ];
-
-//   // Fetch data when component mounts
-//   useEffect(() => {
-//     fetchAllData();
-//   }, []);
-
-//   const fetchAllData = async () => {
-//     const billerName = user?.role === 'Radnus' ? user?.name : '';
-    
-//     // Fetch Invoices
-//     setLoading(prev => ({ ...prev, invoices: true }));
-//     try {
-//       const result = await dispatch(fetchInvoices({ filter: 'all', billerName })).unwrap();
-//       setInvoices(result.data || []);
-//     } catch (error) {
-//       console.error('Error fetching invoices:', error);
-//     } finally {
-//       setLoading(prev => ({ ...prev, invoices: false }));
-//     }
-    
-//     // Fetch Sales Returns
-//     setLoading(prev => ({ ...prev, salesReturns: true }));
-//     try {
-//       const result = await dispatch(fetchSalesReturns({ billerName })).unwrap();
-//       setSalesReturns(result || []);
-//     } catch (error) {
-//       console.error('Error fetching sales returns:', error);
-//     } finally {
-//       setLoading(prev => ({ ...prev, salesReturns: false }));
-//     }
-    
-//     // Fetch Purchase Returns
-//     setLoading(prev => ({ ...prev, purchaseReturns: true }));
-//     try {
-//       const result = await dispatch(fetchPurchaseReturns({ billerName })).unwrap();
-//       setPurchaseReturns(result || []);
-//     } catch (error) {
-//       console.error('Error fetching purchase returns:', error);
-//     } finally {
-//       setLoading(prev => ({ ...prev, purchaseReturns: false }));
-//     }
-    
-//     // Fetch Products
-//     setLoading(prev => ({ ...prev, products: true }));
-//     try {
-//       const result = await dispatch(fetchProducts()).unwrap();
-//       setProducts(result || []);
-//     } catch (error) {
-//       console.error('Error fetching products:', error);
-//     } finally {
-//       setLoading(prev => ({ ...prev, products: false }));
-//     }
-    
-//     // Fetch Customers - Direct API call
-//     setLoading(prev => ({ ...prev, customers: true }));
-//     try {
-//       const response = await API.get('/api/customers');
-//       setCustomers(response.data || []);
-//     } catch (error) {
-//       console.error('Error fetching customers:', error);
-//       setCustomers([]);
-//     } finally {
-//       setLoading(prev => ({ ...prev, customers: false }));
-//     }
-//   };
-
-//   const filterDataByDate = (data, dateField = 'createdAt') => {
-//     if (!dateRange.fromDate && !dateRange.toDate) return data;
-    
-//     return data.filter(item => {
-//       const itemDate = new Date(item[dateField] || item.invoiceDate || item.createdAt);
-//       if (dateRange.fromDate && new Date(dateRange.fromDate) > itemDate) return false;
-//       if (dateRange.toDate) {
-//         const toDate = new Date(dateRange.toDate);
-//         toDate.setHours(23, 59, 59, 999);
-//         if (toDate < itemDate) return false;
-//       }
-//       return true;
-//     });
-//   };
-
-//   const handleExport = async (reportId, type) => {
-//     setExporting(true);
-//     setSuccessMessage('');
-    
-//     try {
-//       let dataToExport = [];
-//       let filename = '';
-      
-//       switch(reportId) {
-//         case 'invoices':
-//           dataToExport = filterDataByDate(invoices, 'createdAt');
-//           filename = `Invoices_${type === 'summary' ? 'Summary' : 'Detailed'}`;
-//           if (type === 'summary') {
-//             exportInvoicesToExcel(dataToExport, filename);
-//           } else {
-//             exportInvoiceItemsToExcel(dataToExport, filename);
-//           }
-//           break;
-          
-//         case 'salesReturns':
-//           dataToExport = filterDataByDate(salesReturns, 'createdAt');
-//           filename = `Sales_Returns_${type === 'summary' ? 'Summary' : 'Detailed'}`;
-//           if (type === 'summary') {
-//             exportSalesReturnsToExcel(dataToExport, filename);
-//           } else {
-//             exportSalesReturnItemsToExcel(dataToExport, filename);
-//           }
-//           break;
-          
-//         case 'purchaseReturns':
-//           dataToExport = filterDataByDate(purchaseReturns, 'createdAt');
-//           filename = 'Purchase_Returns_Report';
-//           exportPurchaseReturnsToExcel(dataToExport, filename);
-//           break;
-          
-//         case 'products':
-//           dataToExport = products;
-//           filename = 'Products_Report';
-//           exportProductsToExcel(dataToExport, filename);
-//           break;
-          
-//         case 'customers':
-//           dataToExport = customers;
-//           filename = 'Customers_Report';
-//           exportCustomersToExcel(dataToExport, filename);
-//           break;
-          
-//         default:
-//           break;
-//       }
-      
-//       setSuccessMessage(`${reportOptions.find(r => r.id === reportId)?.title} exported successfully!`);
-//       setTimeout(() => setSuccessMessage(''), 3000);
-      
-//     } catch (error) {
-//       console.error('Export error:', error);
-//       alert('Failed to export data. Please try again.');
-//     } finally {
-//       setExporting(false);
-//     }
-//   };
-
-//   const getDataCount = (reportId) => {
-//     switch(reportId) {
-//       case 'invoices': return invoices.length;
-//       case 'salesReturns': return salesReturns.length;
-//       case 'purchaseReturns': return purchaseReturns.length;
-//       case 'products': return products.length;
-//       case 'customers': return customers.length;
-//       default: return 0;
-//     }
-//   };
-
-//   const getLoadingState = (reportId) => {
-//     switch(reportId) {
-//       case 'invoices': return loading.invoices;
-//       case 'salesReturns': return loading.salesReturns;
-//       case 'purchaseReturns': return loading.purchaseReturns;
-//       case 'products': return loading.products;
-//       case 'customers': return loading.customers;
-//       default: return false;
-//     }
-//   };
-
-//   const resetDateFilter = () => {
-//     setDateRange({ fromDate: '', toDate: '' });
-//     setShowDateFilter(false);
-//   };
-
-//   return (
-//     <div className={`excel-export-screen ${isDark ? 'dark' : ''}`}>
-//       <div className="export-header">
-//         <div className="header-title">
-//           <Download size={28} />
-//           <h1>Excel Export Center</h1>
-//         </div>
-//         <p className="header-description">
-//           Export your data to Excel format. Choose from various report types and export options.
-//         </p>
-//       </div>
-
-//       {successMessage && (
-//         <div className="success-toast">
-//           <CheckCircle size={18} />
-//           <span>{successMessage}</span>
-//         </div>
-//       )}
-
-//       <div className="filters-bar">
-//         <button 
-//           className={`filter-toggle-btn ${showDateFilter ? 'active' : ''}`}
-//           onClick={() => setShowDateFilter(!showDateFilter)}
-//         >
-//           <Calendar size={16} />
-//           Date Filter
-//           {showDateFilter && <X size={14} className="close-icon" onClick={(e) => {
-//             e.stopPropagation();
-//             resetDateFilter();
-//           }} />}
-//         </button>
-        
-//         {showDateFilter && (
-//           <div className="date-filter-panel">
-//             <div className="date-input-group">
-//               <label>From Date</label>
-//               <input 
-//                 type="date" 
-//                 value={dateRange.fromDate}
-//                 onChange={(e) => setDateRange({...dateRange, fromDate: e.target.value})}
-//               />
-//             </div>
-//             <div className="date-input-group">
-//               <label>To Date</label>
-//               <input 
-//                 type="date" 
-//                 value={dateRange.toDate}
-//                 onChange={(e) => setDateRange({...dateRange, toDate: e.target.value})}
-//               />
-//             </div>
-//             {(dateRange.fromDate || dateRange.toDate) && (
-//               <button className="clear-filter-btn" onClick={resetDateFilter}>
-//                 Clear Filter
-//               </button>
-//             )}
-//           </div>
-//         )}
-//       </div>
-
-//       <div className="reports-grid">
-//         {reportOptions.map((report) => {
-//           const Icon = report.icon;
-//           const isLoading = getLoadingState(report.id);
-//           const dataCount = getDataCount(report.id);
-          
-//           return (
-//             <div key={report.id} className="report-card">
-//               <div className="report-card-header" style={{ borderBottomColor: report.color }}>
-//                 <div className="report-icon" style={{ backgroundColor: `${report.color}15`, color: report.color }}>
-//                   <Icon size={24} />
-//                 </div>
-//                 <div className="report-info">
-//                   <h3>{report.title}</h3>
-//                   <p className="report-description">{report.description}</p>
-//                 </div>
-//               </div>
-              
-//               <div className="report-stats">
-//                 <span className="stat-label">Total Records:</span>
-//                 <span className="stat-value">
-//                   {isLoading ? 'Loading...' : dataCount.toLocaleString()}
-//                 </span>
-//               </div>
-              
-//               <div className="export-options">
-//                 {report.types.map((type) => (
-//                   <button
-//                     key={type.id}
-//                     className="export-option-btn"
-//                     style={{ borderColor: report.color }}
-//                     onClick={() => handleExport(report.id, type.id)}
-//                     disabled={exporting || isLoading || dataCount === 0}
-//                   >
-//                     <Download size={16} style={{ color: report.color }} />
-//                     <div className="export-option-text">
-//                       <span className="export-name">{type.name}</span>
-//                       <span className="export-desc">{type.description}</span>
-//                     </div>
-//                   </button>
-//                 ))}
-//               </div>
-              
-//               {dataCount === 0 && !isLoading && (
-//                 <div className="no-data-message">
-//                   <AlertCircle size={14} />
-//                   <span>No data available</span>
-//                 </div>
-//               )}
-//             </div>
-//           );
-//         })}
-//       </div>
-
-//       <div className="export-tips">
-//         <h4>Export Tips:</h4>
-//         <ul>
-//           <li>Use date filters to export data within a specific timeframe</li>
-//           <li>Summary reports provide overview data without item-level details</li>
-//           <li>Detailed reports include individual item/transaction details</li>
-//           <li>Exported files will be saved with timestamp in filename</li>
-//           <li>All exports are in .xlsx format compatible with Microsoft Excel</li>
-//         </ul>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default ExcelExportScreen;
-
-//++++++++++++++++++++++++++++++++++++
-
 // src/pages/Reports/ExcelExportScreen.js
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -874,10 +12,18 @@ import {
   Calendar,
   X,
   CheckCircle,
-  AlertCircle,
   Eye,
+  AlertCircle,
+  Filter,
+  Zap,
+  CalendarDays,
+  Sun,
   ChevronLeft,
-  ChevronRight
+  CalendarRange,
+  BarChart3,
+  Clock,
+  ChevronRight,
+  Search
 } from 'lucide-react';
 import {
   exportInvoicesToExcel,
@@ -892,7 +38,7 @@ import { fetchInvoices } from '../../services/features/invoice/invoiceSlice';
 import { fetchSalesReturns, fetchPurchaseReturns } from '../../services/features/returns/returnsSlice';
 import { fetchProducts } from '../../services/features/products/productSlice';
 import API from '../../services/API/api';
-import DataTableModal from '../../pages/Reports/DataTableModal';
+import DataTableModal from '../Reports/DataTableModal';
 import './ExcelExportScreen.css';
 
 const ExcelExportScreen = () => {
@@ -901,14 +47,12 @@ const ExcelExportScreen = () => {
   const isDark = theme === 'dark';
   const { user } = useSelector((state) => state.auth);
   
-  // State for data
   const [invoices, setInvoices] = useState([]);
   const [salesReturns, setSalesReturns] = useState([]);
   const [purchaseReturns, setPurchaseReturns] = useState([]);
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   
-  // Loading states
   const [loading, setLoading] = useState({
     invoices: false,
     salesReturns: false,
@@ -917,31 +61,26 @@ const ExcelExportScreen = () => {
     customers: false
   });
   
-  // Filter states
-  const [dateRange, setDateRange] = useState({
-    fromDate: '',
-    toDate: ''
-  });
-  const [periodFilter, setPeriodFilter] = useState('all'); // all, today, yesterday, last7days, thisWeek, lastWeek, thisMonth, lastMonth, custom
+  const [dateRange, setDateRange] = useState({ fromDate: '', toDate: '' });
+  const [periodFilter, setPeriodFilter] = useState('all');
   const [showDateFilter, setShowDateFilter] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  
-  // Modal states
   const [selectedModal, setSelectedModal] = useState(null);
   const [modalData, setModalData] = useState([]);
   const [modalTitle, setModalTitle] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Report options
   const reportOptions = [
     {
       id: 'invoices',
       title: 'Invoices',
       icon: FileText,
       color: '#3b82f6',
-      description: 'Export all invoice details including customer info, amounts, and payment modes',
+      bgLight: '#eff6ff',
+      description: 'Invoice details with customer info and payment modes',
       types: [
         { id: 'summary', name: 'Summary Report', description: 'Basic invoice information' },
         { id: 'detailed', name: 'Detailed Report', description: 'Invoice with item-wise details' }
@@ -952,7 +91,8 @@ const ExcelExportScreen = () => {
       title: 'Sales Returns',
       icon: TrendingUp,
       color: '#ef4444',
-      description: 'Export sales return records with customer and product details',
+      bgLight: '#fef2f2',
+      description: 'Sales return records with customer details',
       types: [
         { id: 'summary', name: 'Summary Report', description: 'Basic return information' },
         { id: 'detailed', name: 'Detailed Report', description: 'Returns with item-wise details' }
@@ -963,7 +103,8 @@ const ExcelExportScreen = () => {
       title: 'Purchase Returns',
       icon: ShoppingCart,
       color: '#f59e0b',
-      description: 'Export purchase return records with supplier details',
+      bgLight: '#fffbeb',
+      description: 'Purchase return records with supplier details',
       types: [
         { id: 'summary', name: 'Summary Report', description: 'Basic purchase return information' }
       ]
@@ -973,7 +114,8 @@ const ExcelExportScreen = () => {
       title: 'Products',
       icon: Package,
       color: '#10b981',
-      description: 'Export product catalog with pricing and inventory details',
+      bgLight: '#ecfdf5',
+      description: 'Product catalog with pricing and inventory',
       types: [
         { id: 'summary', name: 'Products Report', description: 'Complete product list' }
       ]
@@ -983,26 +125,26 @@ const ExcelExportScreen = () => {
       title: 'Customers',
       icon: Users,
       color: '#8b5cf6',
-      description: 'Export customer database with contact and address details',
+      bgLight: '#f5f3ff',
+      description: 'Customer database with contact details',
       types: [
         { id: 'summary', name: 'Customers Report', description: 'Complete customer list' }
       ]
     }
   ];
 
-  // Period options for filtering
   const periodOptions = [
-    { value: 'all', label: 'All Time' },
-    { value: 'today', label: 'Today' },
-    { value: 'yesterday', label: 'Yesterday' },
-    { value: 'last7days', label: 'Last 7 Days' },
-    { value: 'thisWeek', label: 'This Week' },
-    { value: 'lastWeek', label: 'Last Week' },
-    { value: 'thisMonth', label: 'This Month' },
-    { value: 'lastMonth', label: 'Last Month' }
+    { value: 'all', label: 'All Time', icon: CalendarDays },
+    { value: 'today', label: 'Today', icon: Sun },
+    { value: 'yesterday', label: 'Yesterday', icon: ChevronLeft },
+    { value: 'last7days', label: 'Last 7 Days', icon: CalendarRange },
+    { value: 'thisWeek', label: 'This Week', icon: BarChart3 },
+    { value: 'lastWeek', label: 'Last Week', icon: Clock },
+    { value: 'thisMonth', label: 'This Month', icon: Calendar },
+    { value: 'lastMonth', label: 'Last Month', icon: CalendarDays },
+    { value: 'custom', label: 'Custom Range', icon: Filter },
   ];
 
-  // Fetch data when component mounts
   useEffect(() => {
     fetchAllData();
   }, []);
@@ -1010,55 +152,54 @@ const ExcelExportScreen = () => {
   const fetchAllData = async () => {
     const billerName = user?.role === 'Radnus' ? user?.name : '';
     
-    // Fetch Invoices
     setLoading(prev => ({ ...prev, invoices: true }));
     try {
       const result = await dispatch(fetchInvoices({ filter: 'all', billerName })).unwrap();
-      setInvoices(result.data || []);
+      setInvoices(Array.isArray(result?.data) ? result.data : []);
     } catch (error) {
       console.error('Error fetching invoices:', error);
+      setInvoices([]);
     } finally {
       setLoading(prev => ({ ...prev, invoices: false }));
     }
     
-    // Fetch Sales Returns
     setLoading(prev => ({ ...prev, salesReturns: true }));
     try {
       const result = await dispatch(fetchSalesReturns({ billerName })).unwrap();
-      setSalesReturns(result || []);
+      setSalesReturns(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error('Error fetching sales returns:', error);
+      setSalesReturns([]);
     } finally {
       setLoading(prev => ({ ...prev, salesReturns: false }));
     }
     
-    // Fetch Purchase Returns
     setLoading(prev => ({ ...prev, purchaseReturns: true }));
     try {
       const result = await dispatch(fetchPurchaseReturns({ billerName })).unwrap();
-      setPurchaseReturns(result || []);
+      setPurchaseReturns(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error('Error fetching purchase returns:', error);
+      setPurchaseReturns([]);
     } finally {
       setLoading(prev => ({ ...prev, purchaseReturns: false }));
     }
     
-    // Fetch Products
     setLoading(prev => ({ ...prev, products: true }));
     try {
       const result = await dispatch(fetchProducts()).unwrap();
-      setProducts(result || []);
+      setProducts(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
     } finally {
       setLoading(prev => ({ ...prev, products: false }));
     }
     
-    // Fetch Customers - Direct API call
     setLoading(prev => ({ ...prev, customers: true }));
     try {
       const response = await API.get('/api/customers');
-      setCustomers(response.data || []);
+      setCustomers(Array.isArray(response?.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching customers:', error);
       setCustomers([]);
@@ -1067,7 +208,6 @@ const ExcelExportScreen = () => {
     }
   };
 
-  // Helper function to get date range based on period filter
   const getDateRangeFromPeriod = (period) => {
     const now = new Date();
     const start = new Date();
@@ -1089,17 +229,15 @@ const ExcelExportScreen = () => {
         start.setHours(0, 0, 0, 0);
         break;
       case 'thisWeek':
-        const day = now.getDay();
-        start.setDate(now.getDate() - day);
+        start.setDate(now.getDate() - now.getDay());
         start.setHours(0, 0, 0, 0);
         end.setDate(start.getDate() + 6);
         end.setHours(23, 59, 59, 999);
         break;
       case 'lastWeek':
-        const lastWeekDate = new Date(now);
-        lastWeekDate.setDate(now.getDate() - 7);
-        const lastWeekDay = lastWeekDate.getDay();
-        start.setDate(lastWeekDate.getDate() - lastWeekDay);
+        const lw = new Date(now);
+        lw.setDate(now.getDate() - 7);
+        start.setDate(lw.getDate() - lw.getDay());
         start.setHours(0, 0, 0, 0);
         end.setDate(start.getDate() + 6);
         end.setHours(23, 59, 59, 999);
@@ -1119,127 +257,115 @@ const ExcelExportScreen = () => {
       default:
         return null;
     }
-
     return { fromDate: start, toDate: end };
   };
 
-  const filterDataByDate = (data, dateField = 'createdAt') => {
-    let fromDate = dateRange.fromDate ? new Date(dateRange.fromDate) : null;
-    let toDate = dateRange.toDate ? new Date(dateRange.toDate) : null;
+  const filterDataByDate = (data) => {
+    if (!Array.isArray(data)) return [];
 
-    // Apply period filter if not custom
-    if (periodFilter !== 'custom' && periodFilter !== 'all') {
-      const periodRange = getDateRangeFromPeriod(periodFilter);
-      if (periodRange) {
-        fromDate = periodRange.fromDate;
-        toDate = periodRange.toDate;
+    let fromDate = null;
+    let toDate = null;
+
+    if (periodFilter === 'custom') {
+      fromDate = dateRange.fromDate ? new Date(dateRange.fromDate) : null;
+      toDate = dateRange.toDate ? new Date(dateRange.toDate) : null;
+      if (toDate) toDate.setHours(23, 59, 59, 999);
+    } else if (periodFilter !== 'all') {
+      const range = getDateRangeFromPeriod(periodFilter);
+      if (range) {
+        fromDate = range.fromDate;
+        toDate = range.toDate;
       }
     }
-    
+
     if (!fromDate && !toDate) return data;
-    
+
     return data.filter(item => {
-      const itemDate = new Date(item[dateField] || item.invoiceDate || item.createdAt);
-      if (fromDate && fromDate > itemDate) return false;
-      if (toDate && toDate < itemDate) return false;
+      const itemDate = new Date(item?.invoiceDate || item?.createdAt);
+      if (isNaN(itemDate)) return true;
+      if (fromDate && itemDate < fromDate) return false;
+      if (toDate && itemDate > toDate) return false;
       return true;
     });
   };
 
-  const handleViewData = (reportId) => {
-    let data = [];
-    let title = '';
-    
+  const getRawData = (reportId) => {
     switch(reportId) {
-      case 'invoices':
-        data = filterDataByDate(invoices, 'createdAt');
-        title = 'Invoices Data';
-        break;
-      case 'salesReturns':
-        data = filterDataByDate(salesReturns, 'createdAt');
-        title = 'Sales Returns Data';
-        break;
-      case 'purchaseReturns':
-        data = filterDataByDate(purchaseReturns, 'createdAt');
-        title = 'Purchase Returns Data';
-        break;
-      case 'products':
-        data = products;
-        title = 'Products Data';
-        break;
-      case 'customers':
-        data = customers;
-        title = 'Customers Data';
-        break;
-      default:
-        return;
+      case 'invoices': return invoices;
+      case 'salesReturns': return salesReturns;
+      case 'purchaseReturns': return purchaseReturns;
+      case 'products': return products;
+      case 'customers': return customers;
+      default: return [];
     }
-    
+  };
+
+  const getDataCount = (reportId) => {
+    const raw = getRawData(reportId);
+    if (reportId === 'products' || reportId === 'customers') {
+      return Array.isArray(raw) ? raw.length : 0;
+    }
+    return filterDataByDate(raw).length;
+  };
+
+  const getLoadingState = (reportId) => {
+    return loading[reportId] || false;
+  };
+
+  const handleViewData = (reportId) => {
+    const raw = getRawData(reportId);
+    const data = (reportId === 'products' || reportId === 'customers') ? raw : filterDataByDate(raw);
+    const report = reportOptions.find(r => r.id === reportId);
     setModalData(data);
-    setModalTitle(title);
+    setModalTitle(`${report?.title} Data`);
     setSelectedModal(reportId);
     setCurrentPage(1);
   };
 
   const handleExport = async (reportId, type) => {
-    setExporting(true);
+    setExporting(`${reportId}-${type}`);
     setSuccessMessage('');
     
     try {
-      let dataToExport = [];
-      let filename = '';
-      
+      const raw = getRawData(reportId);
+      const filtered = (reportId === 'products' || reportId === 'customers') ? raw : filterDataByDate(raw);
+
       switch(reportId) {
         case 'invoices':
-          dataToExport = filterDataByDate(invoices, 'createdAt');
-          filename = `Invoices_${type === 'summary' ? 'Summary' : 'Detailed'}`;
           if (type === 'summary') {
-            exportInvoicesToExcel(dataToExport, filename);
+            exportInvoicesToExcel(filtered, `Invoices_Summary`);
           } else {
-            exportInvoiceItemsToExcel(dataToExport, filename);
+            exportInvoiceItemsToExcel(filtered, `Invoices_Detailed`);
           }
           break;
-          
         case 'salesReturns':
-          dataToExport = filterDataByDate(salesReturns, 'createdAt');
-          filename = `Sales_Returns_${type === 'summary' ? 'Summary' : 'Detailed'}`;
           if (type === 'summary') {
-            exportSalesReturnsToExcel(dataToExport, filename);
+            exportSalesReturnsToExcel(filtered, `Sales_Returns_Summary`);
           } else {
-            exportSalesReturnItemsToExcel(dataToExport, filename);
+            exportSalesReturnItemsToExcel(filtered, `Sales_Returns_Detailed`);
           }
           break;
-          
         case 'purchaseReturns':
-          dataToExport = filterDataByDate(purchaseReturns, 'createdAt');
-          filename = 'Purchase_Returns_Report';
-          exportPurchaseReturnsToExcel(dataToExport, filename);
+          exportPurchaseReturnsToExcel(filtered, `Purchase_Returns_Report`);
           break;
-          
         case 'products':
-          dataToExport = products;
-          filename = 'Products_Report';
-          exportProductsToExcel(dataToExport, filename);
+          exportProductsToExcel(filtered, `Products_Report`);
           break;
-          
         case 'customers':
-          dataToExport = customers;
-          filename = 'Customers_Report';
-          exportCustomersToExcel(dataToExport, filename);
+          exportCustomersToExcel(filtered, `Customers_Report`);
           break;
-          
         default:
           break;
       }
       
-      setSuccessMessage(`${reportOptions.find(r => r.id === reportId)?.title} exported successfully!`);
+      const title = reportOptions.find(r => r.id === reportId)?.title;
+      setSuccessMessage(`${title} exported successfully!`);
       setTimeout(() => setSuccessMessage(''), 3000);
-      
     } catch (error) {
       console.error('Export error:', error);
       alert('Failed to export data. Please try again.');
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
@@ -1253,201 +379,218 @@ const ExcelExportScreen = () => {
     }
   };
 
-  const getDataCount = (reportId) => {
-    let data = [];
-    switch(reportId) {
-      case 'invoices': data = invoices; break;
-      case 'salesReturns': data = salesReturns; break;
-      case 'purchaseReturns': data = purchaseReturns; break;
-      case 'products': data = products; break;
-      case 'customers': data = customers; break;
-      default: return 0;
-    }
-    return filterDataByDate(data, 'createdAt').length;
-  };
-
-  const getLoadingState = (reportId) => {
-    switch(reportId) {
-      case 'invoices': return loading.invoices;
-      case 'salesReturns': return loading.salesReturns;
-      case 'purchaseReturns': return loading.purchaseReturns;
-      case 'products': return loading.products;
-      case 'customers': return loading.customers;
-      default: return false;
-    }
-  };
-
-  const resetDateFilter = () => {
+  const resetFilter = () => {
+    setPeriodFilter('all');
     setDateRange({ fromDate: '', toDate: '' });
     setShowDateFilter(false);
-    setPeriodFilter('all');
+    setSearchTerm('');
   };
 
-  // Get display text for current period filter
-  const getPeriodDisplayText = () => {
-    const period = periodOptions.find(p => p.value === periodFilter);
-    return period ? period.label : 'All Time';
-  };
+  const filteredInvoices = invoices.filter(inv => 
+    inv.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    inv.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalRecords = filteredInvoices.length + salesReturns.length + purchaseReturns.length + products.length + customers.length;
 
   return (
-    <div className={`excel-export-screen ${isDark ? 'dark' : ''}`}>
-      <div className="export-header">
-        <div className="header-title">
-          <Download size={28} />
-          <h1>Excel Export Center</h1>
-        </div>
-        <p className="header-description">
-          Export your data to Excel format. Choose from various report types and export options.
-        </p>
-      </div>
-
+    <div className={`excel-export-container ${isDark ? 'dark' : ''}`}>
+      
       {successMessage && (
-        <div className="success-toast">
-          <CheckCircle size={18} />
+        <div className="toast-notification">
+          <CheckCircle size={16} />
           <span>{successMessage}</span>
         </div>
       )}
 
-      <div className="filters-bar">
-        <div className="period-filters">
-          <label className="period-label">Time Period:</label>
-          <select 
-            className="period-select"
-            value={periodFilter}
-            onChange={(e) => handlePeriodChange(e.target.value)}
-          >
-            {periodOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          
-          <button 
-            className={`filter-toggle-btn ${showDateFilter ? 'active' : ''}`}
-            onClick={() => {
-              handlePeriodChange('custom');
-            }}
-          >
-            <Calendar size={16} />
-            Custom Date Range
-          </button>
-        </div>
+      <div className="main-content">
         
-        {showDateFilter && (
-          <div className="date-filter-panel">
-            <div className="date-input-group">
-              <label>From Date</label>
-              <input 
-                type="date" 
-                value={dateRange.fromDate}
-                onChange={(e) => setDateRange({...dateRange, fromDate: e.target.value})}
-              />
-            </div>
-            <div className="date-input-group">
-              <label>To Date</label>
-              <input 
-                type="date" 
-                value={dateRange.toDate}
-                onChange={(e) => setDateRange({...dateRange, toDate: e.target.value})}
-              />
-            </div>
-            {(dateRange.fromDate || dateRange.toDate) && (
-              <button className="clear-filter-btn" onClick={resetDateFilter}>
-                Clear Filter
+        {/* Header */}
+        <div className="header-section">
+          <div>
+            <h1 className="page-title">Export Center</h1>
+            <p className="page-subtitle">Export your data to Excel format with just a few clicks</p>
+          </div>
+          <div className="total-stats-card">
+            <div className="total-stats-value">{totalRecords.toLocaleString()}</div>
+            <div className="total-stats-label">Total Records</div>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="search-container">
+          <div className="search-wrapper">
+            <Search size={18} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search invoices by customer name or invoice number..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="search-clear">
+                <X size={16} />
               </button>
             )}
           </div>
-        )}
-        
-        <div className="active-filter-info">
-          {periodFilter !== 'all' && (
-            <span className="filter-badge">
-              Filter: {getPeriodDisplayText()}
-              <X size={14} onClick={resetDateFilter} className="filter-badge-close" />
-            </span>
-          )}
+        </div>
+
+        {/* Filter Bar */}
+        <div className="filter-container">
+          <div className="filter-header">
+            <div className="filter-title">
+              <Filter size={16} />
+              <span>Filter Data</span>
+            </div>
+            {periodFilter !== 'all' && (
+              <button className="clear-filter-btn" onClick={resetFilter}>
+                <X size={13} />
+                Clear filters
+              </button>
+            )}
+          </div>
+          
+          <div className="filter-body">
+            <div className="filter-group">
+              <label className="filter-label">Time Period</label>
+              <div className="period-buttons">
+                {periodOptions.map(option => {
+                  const IconComponent = option.icon;
+                  const isActive = periodFilter === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      className={`period-btn ${isActive ? 'active' : ''}`}
+                      onClick={() => handlePeriodChange(option.value)}
+                    >
+                      <IconComponent size={14} />
+                      <span>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {showDateFilter && (
+              <div className="date-range">
+                <div className="date-input">
+                  <label className="date-label">From Date</label>
+                  <input
+                    type="date"
+                    className="date-field"
+                    value={dateRange.fromDate}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, fromDate: e.target.value }))}
+                  />
+                </div>
+                <div className="date-input">
+                  <label className="date-label">To Date</label>
+                  <input
+                    type="date"
+                    className="date-field"
+                    value={dateRange.toDate}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, toDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="stats-grid">
+          {[
+            { label: 'Invoices', value: invoices.length, color: '#3b82f6' },
+            { label: 'Sales Returns', value: salesReturns.length, color: '#ef4444' },
+            { label: 'Purchase Returns', value: purchaseReturns.length, color: '#f59e0b' },
+            { label: 'Products', value: products.length, color: '#10b981' },
+            { label: 'Customers', value: customers.length, color: '#8b5cf6' }
+          ].map(stat => (
+            <div key={stat.label} className="stat-card">
+              <div className="stat-card-header">
+                <span className="stat-card-label">{stat.label}</span>
+                <span className="stat-card-dot" style={{ background: stat.color }}></span>
+              </div>
+              <div className="stat-card-value">{stat.value.toLocaleString()}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Export Cards Grid */}
+        <div className="cards-grid">
+          {reportOptions.map((report, idx) => {
+            const Icon = report.icon;
+            const isLoading = getLoadingState(report.id);
+            const dataCount = getDataCount(report.id);
+            const isEmpty = !isLoading && dataCount === 0;
+
+            return (
+              <div key={report.id} className="export-card" style={{ animationDelay: `${idx * 0.05}s` }}>
+                <div className="card-header">
+                  <div className="card-icon" style={{ background: report.bgLight, color: report.color }}>
+                    <Icon size={22} />
+                  </div>
+                  <div className="card-info">
+                    <h3 className="card-title">{report.title}</h3>
+                    <p className="card-description">{report.description}</p>
+                  </div>
+                </div>
+
+                <div className="card-stats">
+                  <div className="stats-row">
+                    <span className="stats-label">Available Records</span>
+                    <span className="stats-number" style={{ color: report.color }}>
+                      {isLoading ? '...' : dataCount.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="card-actions">
+                  <button
+                    className="view-data-btn"
+                    style={{ borderColor: report.color, color: report.color }}
+                    onClick={() => handleViewData(report.id)}
+                    disabled={isLoading || isEmpty}
+                  >
+                    <Eye size={15} />
+                    View Data
+                  </button>
+
+                  <div className="export-buttons">
+                    {report.types.map((type) => {
+                      const isExp = exporting === `${report.id}-${type.id}`;
+                      return (
+                        <button
+                          key={type.id}
+                          className={`export-btn ${isExp ? 'exporting' : ''}`}
+                          style={{ borderColor: report.color }}
+                          onClick={() => handleExport(report.id, type.id)}
+                          disabled={!!exporting || isLoading || isEmpty}
+                        >
+                          <Download size={14} className={isExp ? 'spin' : ''} />
+                          <div className="export-btn-text">
+                            <div className="export-btn-name">{type.name}</div>
+                            <div className="export-btn-desc">{type.description}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {isEmpty && (
+                  <div className="card-empty">
+                    <AlertCircle size={14} />
+                    <span>No data available</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="reports-grid">
-        {reportOptions.map((report) => {
-          const Icon = report.icon;
-          const isLoading = getLoadingState(report.id);
-          const dataCount = getDataCount(report.id);
-          
-          return (
-            <div key={report.id} className="report-card">
-              <div className="report-card-header" style={{ borderBottomColor: report.color }}>
-                <div className="report-icon" style={{ backgroundColor: `${report.color}15`, color: report.color }}>
-                  <Icon size={24} />
-                </div>
-                <div className="report-info">
-                  <h3>{report.title}</h3>
-                  <p className="report-description">{report.description}</p>
-                </div>
-              </div>
-              
-              <div className="report-stats">
-                <span className="stat-label">Total Records:</span>
-                <span className="stat-value">
-                  {isLoading ? 'Loading...' : dataCount.toLocaleString()}
-                </span>
-              </div>
-              
-              <div className="action-buttons">
-                <button
-                  className="view-data-btn"
-                  onClick={() => handleViewData(report.id)}
-                  disabled={isLoading || dataCount === 0}
-                >
-                  <Eye size={16} />
-                  View Data
-                </button>
-              </div>
-              
-              <div className="export-options">
-                {report.types.map((type) => (
-                  <button
-                    key={type.id}
-                    className="export-option-btn"
-                    style={{ borderColor: report.color }}
-                    onClick={() => handleExport(report.id, type.id)}
-                    disabled={exporting || isLoading || dataCount === 0}
-                  >
-                    <Download size={16} style={{ color: report.color }} />
-                    <div className="export-option-text">
-                      <span className="export-name">{type.name}</span>
-                      <span className="export-desc">{type.description}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              
-              {dataCount === 0 && !isLoading && (
-                <div className="no-data-message">
-                  <AlertCircle size={14} />
-                  <span>No data available for selected period</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="export-tips">
-        <h4>Export Tips:</h4>
-        <ul>
-          <li>Use time period filters to export data for specific timeframes (Today, This Week, This Month, etc.)</li>
-          <li>Use custom date range for specific date intervals</li>
-          <li>Click "View Data" to preview data before exporting</li>
-          <li>Summary reports provide overview data without item-level details</li>
-          <li>Detailed reports include individual item/transaction details</li>
-          <li>All exports are in .xlsx format compatible with Microsoft Excel</li>
-        </ul>
-      </div>
-
-      {/* Data Table Modal */}
+      {/* Modal */}
       <DataTableModal
         isOpen={selectedModal !== null}
         onClose={() => setSelectedModal(null)}
@@ -1457,11 +600,7 @@ const ExcelExportScreen = () => {
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
         onPageChange={setCurrentPage}
-        onExport={() => {
-          if (selectedModal) {
-            handleExport(selectedModal, 'summary');
-          }
-        }}
+        onExport={() => selectedModal && handleExport(selectedModal, 'summary')}
       />
     </div>
   );

@@ -1,4 +1,3 @@
-// src/utils/excelExport.js
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
@@ -282,43 +281,6 @@ export const exportProductsToExcel = (products, filename = 'Products_Report') =>
   const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   saveAs(blob, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
 };
-
-// // Export Customers to Excel
-// export const exportCustomersToExcel = (customers, filename = 'Customers_Report') => {
-//   if (!customers || customers.length === 0) {
-//     alert('No customer data to export');
-//     return;
-//   }
-
-//   const exportData = customers.map((customer, index) => ({
-//     'S.No': index + 1,
-//     'Name': customer.name || '',
-//     'Phone': customer.phone || '',
-//     'Type': customer.type === 'shop' ? 'Shop' : 'Customer',
-//     'Shop Name': customer.shopName || '',
-//     'Address': customer.address || '',
-//     'City': customer.city || '',
-//     'State': customer.state || '',
-//     'Created At': formatDateExcel(customer.createdAt),
-//   }));
-
-//   const worksheet = XLSX.utils.json_to_sheet(exportData);
-  
-//   const colWidths = [
-//     { wch: 6 }, { wch: 25 }, { wch: 15 }, { wch: 12 },
-//     { wch: 20 }, { wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
-//   ];
-//   worksheet['!cols'] = colWidths;
-
-//   const workbook = XLSX.utils.book_new();
-//   XLSX.utils.book_append_sheet(workbook, worksheet, 'Customers');
-  
-//   const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-//   const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-//   saveAs(blob, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
-// };
-
-// Add to src/utils/excelExport.js
 
 // Export Customers to Excel
 export const exportCustomersToExcel = (customers, filename = 'Customers_Report') => {
