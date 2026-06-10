@@ -33,6 +33,7 @@ import {
   RotateCcw,
   PackageX,
   Download,
+  TrendingUp,
 } from "lucide-react";
 
 const ROLE_NAV = {
@@ -55,6 +56,8 @@ const ROLE_NAV = {
     { path: "/reports", label: "Reports", icon: BarChart3 },
     { path: "/profile", label: "Profile", icon: Settings },
     {path: "/excel-export",label: "Excel Export",icon: Download},
+    { path: "/stock-movement", label: "Stock Movement", icon: TrendingUp },
+
   ],
   Radnus: [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -70,6 +73,8 @@ const ROLE_NAV = {
     { path: "/reports", label: "Reports", icon: BarChart3 },
     { path: "/profile", label: "Profile", icon: Settings },
     {path: "/excel-export",label: "Excel Export",icon: Download},
+    { path: "/stock-movement", label: "Stock Movement", icon: TrendingUp },
+
   ],
   Distributor: [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },

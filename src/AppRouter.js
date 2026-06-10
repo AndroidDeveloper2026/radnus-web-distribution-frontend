@@ -56,6 +56,7 @@ import {
   ExecutivesPage,
   FSEPage,
 } from "./pages/Features/FeaturePages";
+import StockMovement from "./pages/StockMovement/StockMovement";
 
 import { PageLoader } from "./components/ui/UI";
 
@@ -84,6 +85,7 @@ const ROLE_ROUTES = {
     "sales-return",
     "purchase-return",
     "excel-export",
+    "stock-movement",
   ],
   Radnus: [
     "dashboard",
@@ -104,6 +106,7 @@ const ROLE_ROUTES = {
     "sales-return",
     "purchase-return",
     "excel-export",
+    "stock-movement",
   ],
   Distributor: [
     "dashboard",
@@ -435,6 +438,17 @@ const AppRouterInner = () => {
               </ProtectedRoute>
             }
           /> */}
+
+          <Route
+            path="/stock-movement"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="stock-movement">
+                  <StockMovement />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/excel-export"
