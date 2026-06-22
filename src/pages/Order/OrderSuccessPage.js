@@ -705,6 +705,8 @@ const SALESPERSONS = [
   { id: 9, name: "SARANYA" },
   { id: 10, name: "VIJAYA LAKSHMI" },
   { id: 11, name: "VENNILA" },
+  { id: 12, name: "ASHWINI" },
+  { id: 13, name: "PRIYADHARSHNI" },
 ];
 
 const PAYMENT_MODES = [
