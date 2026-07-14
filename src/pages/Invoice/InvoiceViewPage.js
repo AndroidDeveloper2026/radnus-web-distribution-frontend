@@ -523,7 +523,7 @@
 
 //   // Ensure items maintain their original order
 //   const orderedItems = [...items];
-  
+
 //   const subtotal = storeSubtotal || orderedItems.reduce((sum, i) => sum + i.qty * i.price, 0);
 //   const grandTotal = totalAmount;
 
@@ -911,15 +911,15 @@
 //         <div className="detail-card">
 //           <h3>Customer</h3>
 //           <div className="detail-row">
-//             <Phone size={14} /> 
+//             <Phone size={14} />
 //             <span>{getDisplayName()} – {customerPhone}</span>
 //           </div>
 //           <div className="detail-row">
-//             <MapPin size={14} /> 
+//             <MapPin size={14} />
 //             <span>{[customerAddress, customerCity, customerState].filter(Boolean).join(', ') || '—'}</span>
 //           </div>
 //           <div className="detail-row">
-//             <CreditCard size={14} /> 
+//             <CreditCard size={14} />
 //             <span>Payment: {paymentMode?.toUpperCase()}</span>
 //           </div>
 //         </div>
@@ -987,23 +987,34 @@
 //++++++++++++++++++++++++++++++++++++++++
 
 // src/pages/Invoices/InvoiceViewPage.js
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
-import './InvoiceViewPage.css';
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useTheme } from "../../context/ThemeContext";
+import "./InvoiceViewPage.css";
 
-import { Download, ArrowLeft, Phone, MapPin, CreditCard, Printer } from 'lucide-react';
+import {
+  Download,
+  ArrowLeft,
+  Phone,
+  MapPin,
+  CreditCard,
+  Printer,
+} from "lucide-react";
 
 const InvoiceViewPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === "dark";
   const invoice = location.state?.invoice;
   const [downloading, setDownloading] = useState(false);
 
   if (!invoice) {
-    return <div className={`invoice-view ${isDark ? 'dark' : ''}`}>No invoice data found.</div>;
+    return (
+      <div className={`invoice-view ${isDark ? "dark" : ""}`}>
+        No invoice data found.
+      </div>
+    );
   }
 
   // Destructure invoice fields
@@ -1026,14 +1037,16 @@ const InvoiceViewPage = () => {
     discount = 0,
     courierCharge = 0,
     billerName,
-    salesperson = '',
-    referenceNo = '',
+    salesperson = "",
+    referenceNo = "",
+     orderType = '', // ✅ ADD THIS LINE
   } = invoice;
 
   // Ensure items maintain their original order
   const orderedItems = [...items];
-  
-  const subtotal = storeSubtotal || orderedItems.reduce((sum, i) => sum + i.qty * i.price, 0);
+
+  const subtotal =
+    storeSubtotal || orderedItems.reduce((sum, i) => sum + i.qty * i.price, 0);
   const grandTotal = totalAmount;
 
   // Helper function to get display name (customer name only)
@@ -1043,7 +1056,7 @@ const InvoiceViewPage = () => {
 
   // Helper to get shop name
   const getShopName = () => {
-    if (customerType === 'shop' && shopName) {
+    if (customerType === "shop" && shopName) {
       return shopName;
     }
     return null;
@@ -1053,36 +1066,87 @@ const InvoiceViewPage = () => {
   const generateInvoiceHTML = () => {
     // Helper: amount to words
     const amountInWords = (num) => {
-      const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-      const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-      if (num === 0) return 'Zero';
+      const ones = [
+        "",
+        "One",
+        "Two",
+        "Three",
+        "Four",
+        "Five",
+        "Six",
+        "Seven",
+        "Eight",
+        "Nine",
+        "Ten",
+        "Eleven",
+        "Twelve",
+        "Thirteen",
+        "Fourteen",
+        "Fifteen",
+        "Sixteen",
+        "Seventeen",
+        "Eighteen",
+        "Nineteen",
+      ];
+      const tens = [
+        "",
+        "",
+        "Twenty",
+        "Thirty",
+        "Forty",
+        "Fifty",
+        "Sixty",
+        "Seventy",
+        "Eighty",
+        "Ninety",
+      ];
+      if (num === 0) return "Zero";
       if (num < 20) return ones[num];
-      if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? ' ' + ones[num % 10] : '');
-      if (num < 1000) return ones[Math.floor(num / 100)] + ' Hundred' + (num % 100 ? ' ' + amountInWords(num % 100) : '');
-      if (num < 100000) return amountInWords(Math.floor(num / 1000)) + ' Thousand' + (num % 1000 ? ' ' + amountInWords(num % 1000) : '');
-      return amountInWords(Math.floor(num / 100000)) + ' Lakh' + (num % 100000 ? ' ' + amountInWords(num % 100000) : '');
+      if (num < 100)
+        return (
+          tens[Math.floor(num / 10)] + (num % 10 ? " " + ones[num % 10] : "")
+        );
+      if (num < 1000)
+        return (
+          ones[Math.floor(num / 100)] +
+          " Hundred" +
+          (num % 100 ? " " + amountInWords(num % 100) : "")
+        );
+      if (num < 100000)
+        return (
+          amountInWords(Math.floor(num / 1000)) +
+          " Thousand" +
+          (num % 1000 ? " " + amountInWords(num % 1000) : "")
+        );
+      return (
+        amountInWords(Math.floor(num / 100000)) +
+        " Lakh" +
+        (num % 100000 ? " " + amountInWords(num % 100000) : "")
+      );
     };
     const grandTotalWords = `INR ${amountInWords(Math.round(grandTotal))} Only`;
 
     // Get customer and shop names
     const buyerCustomerName = customerName;
     const buyerShopName = getShopName();
-    
+
     // Build buyer display lines
-    let buyerDisplayLines = '';
+    let buyerDisplayLines = "";
     buyerDisplayLines += `<p style="font-size:0.78rem; margin:2px 0; font-weight:600;">${buyerCustomerName}</p>`;
     if (buyerShopName) {
       buyerDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${buyerShopName}</p>`;
     }
     buyerDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${customerPhone}</p>`;
-    if (customerAddress && customerAddress !== '—') {
+    if (customerAddress && customerAddress !== "—") {
       buyerDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${customerAddress}</p>`;
     }
     if (customerCity || customerState) {
-      buyerDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${[customerCity, customerState].filter(Boolean).join(' - ')}</p>`;
+      buyerDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${[customerCity, customerState].filter(Boolean).join(" - ")}</p>`;
     }
 
-    const buyerLine3 = [customerCity, customerState].filter(Boolean).join(' - ');
+    const buyerLine3 = [customerCity, customerState]
+      .filter(Boolean)
+      .join(" - ");
 
     // Build shipping display lines
     let shipCustomerName = buyerCustomerName;
@@ -1091,36 +1155,42 @@ const InvoiceViewPage = () => {
     let shipAddress = customerAddress;
     let shipCity = customerCity;
     let shipState = customerState;
-    
+
     if (!sameAsBuyer && shippingAddress) {
       shipCustomerName = shippingAddress.name || buyerCustomerName;
       shipShopName = null;
       shipPhone = shippingAddress.phone || customerPhone;
-      shipAddress = shippingAddress.address || '';
-      shipCity = shippingAddress.city || '';
-      shipState = shippingAddress.state || '';
+      shipAddress = shippingAddress.address || "";
+      shipCity = shippingAddress.city || "";
+      shipState = shippingAddress.state || "";
     }
-    
+
     // Build shipping display lines
-    let shipDisplayLines = '';
+    let shipDisplayLines = "";
     shipDisplayLines += `<p style="font-size:0.78rem; margin:2px 0; font-weight:600;">${shipCustomerName}</p>`;
     if (shipShopName) {
       shipDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${shipShopName}</p>`;
     }
     shipDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${shipPhone}</p>`;
-    if (shipAddress && shipAddress !== '—') {
+    if (shipAddress && shipAddress !== "—") {
       shipDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${shipAddress}</p>`;
     }
     if (shipCity || shipState) {
-      shipDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${[shipCity, shipState].filter(Boolean).join(' - ')}</p>`;
+      shipDisplayLines += `<p style="font-size:0.78rem; margin:2px 0;">${[shipCity, shipState].filter(Boolean).join(" - ")}</p>`;
     }
 
     // Reference date
-    const refDate = createdAt ? new Date(createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-    const refDisplay = referenceNo ? `${referenceNo} dt. ${refDate}` : '';
+    const refDate = createdAt
+      ? new Date(createdAt).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
+    const refDisplay = referenceNo ? `${referenceNo} dt. ${refDate}` : "";
 
     // Items rows - preserving order exactly as in the array with proper table structure
-    let itemsRows = '';
+    let itemsRows = "";
     orderedItems.forEach((item, idx) => {
       const amount = item.qty * item.price;
       itemsRows += `
@@ -1136,7 +1206,9 @@ const InvoiceViewPage = () => {
       `;
     });
 
-    const discountRow = discount > 0 ? `
+    const discountRow =
+      discount > 0
+        ? `
       <tr>
         <td style="border:1px solid #000;padding:8px;"></td>
         <td style="border:1px solid #000;padding:8px;">DISCOUNT</td>
@@ -1145,7 +1217,8 @@ const InvoiceViewPage = () => {
         <td style="border:1px solid #000;padding:8px;"></td>
         <td style="border:1px solid #000;padding:8px;"></td>
         <td style="border:1px solid #000;padding:8px;text-align:right;">-₹${discount}.00</td>
-      </tr>` : '';
+      </tr>`
+        : "";
 
     const totalQty = orderedItems.reduce((sum, i) => sum + i.qty, 0);
 
@@ -1292,6 +1365,7 @@ const InvoiceViewPage = () => {
                 <tr><td style="font-weight:600;">Mode/Terms of Payment</td><td>${paymentMode?.toUpperCase()}</td></tr>
                 <tr><td style="font-weight:600;">Salesperson</td><td>${salesperson}</td></tr>
                 <tr><td style="font-weight:600;">Reference No. &amp; Date</td><td>${refDisplay}</td></tr>
+                <tr><td style="font-weight:600;">Order Type</td><td>${orderType || ''}</td></tr>
                 <tr><td style="font-weight:600;">Buyer's Order No.</td><td></td></tr>
                 <tr><td style="font-weight:600;">Dispatched through</td><td></td></tr>
                 <tr><td style="font-weight:600;">Destination</td><td>${buyerLine3}</td></tr>
@@ -1371,7 +1445,7 @@ const InvoiceViewPage = () => {
   // Print handler
   const handlePrint = () => {
     setDownloading(true);
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     printWindow.document.write(generateInvoiceHTML());
     printWindow.document.close();
     printWindow.onload = () => {
@@ -1387,28 +1461,28 @@ const InvoiceViewPage = () => {
       setDownloading(true);
 
       // Create hidden container
-      const element = document.createElement('div');
+      const element = document.createElement("div");
       element.innerHTML = generateInvoiceHTML();
 
       // Append temporarily
       document.body.appendChild(element);
 
       // Import html2pdf dynamically
-      const html2pdf = (await import('html2pdf.js')).default;
+      const html2pdf = (await import("html2pdf.js")).default;
 
       // PDF options
       const opt = {
         margin: 0.3,
         filename: `${invoiceNumber}.pdf`,
-        image: { type: 'jpeg', quality: 1 },
+        image: { type: "jpeg", quality: 1 },
         html2canvas: {
           scale: 2,
           useCORS: true,
         },
         jsPDF: {
-          unit: 'in',
-          format: 'a4',
-          orientation: 'portrait',
+          unit: "in",
+          format: "a4",
+          orientation: "portrait",
         },
       };
 
@@ -1417,10 +1491,9 @@ const InvoiceViewPage = () => {
 
       // Cleanup
       document.body.removeChild(element);
-
     } catch (error) {
-      console.error('PDF download failed:', error);
-      alert('Failed to download PDF. Please try again.');
+      console.error("PDF download failed:", error);
+      alert("Failed to download PDF. Please try again.");
     } finally {
       setDownloading(false);
     }
@@ -1428,7 +1501,7 @@ const InvoiceViewPage = () => {
 
   // Page Render
   return (
-    <div className={`invoice-view ${isDark ? 'dark' : ''}`}>
+    <div className={`invoice-view ${isDark ? "dark" : ""}`}>
       <div className="view-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
           <ArrowLeft size={18} /> Back
@@ -1463,27 +1536,36 @@ const InvoiceViewPage = () => {
               <span>{referenceNo}</span>
             </div>
           )}
+          {/* ✅ ADD THIS BLOCK */}
+          {orderType && (
+            <div className="detail-row">
+              <span className="label">Order Type</span>
+              <span>{orderType}</span>
+            </div>
+          )}
         </div>
 
         {/* Customer */}
         <div className="detail-card">
           <h3>Customer</h3>
           <div className="detail-row">
-            <Phone size={14} /> 
+            <Phone size={14} />
             <div>
-              <div style={{ fontWeight: '600' }}>{customerName}</div>
-              {customerType === 'shop' && shopName && (
-                <div>{shopName}</div>
-              )}
+              <div style={{ fontWeight: "600" }}>{customerName}</div>
+              {customerType === "shop" && shopName && <div>{shopName}</div>}
               <div>{customerPhone}</div>
             </div>
           </div>
           <div className="detail-row">
-            <MapPin size={14} /> 
-            <span>{[customerAddress, customerCity, customerState].filter(Boolean).join(', ') || '—'}</span>
+            <MapPin size={14} />
+            <span>
+              {[customerAddress, customerCity, customerState]
+                .filter(Boolean)
+                .join(", ") || "—"}
+            </span>
           </div>
           <div className="detail-row">
-            <CreditCard size={14} /> 
+            <CreditCard size={14} />
             <span>Payment: {paymentMode?.toUpperCase()}</span>
           </div>
         </div>
@@ -1518,27 +1600,41 @@ const InvoiceViewPage = () => {
         {/* Summary */}
         <div className="detail-card summary">
           <div className="summary-row">
-            <span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span>
+            <span>Subtotal</span>
+            <span>₹{subtotal.toFixed(2)}</span>
           </div>
           {discount > 0 && (
             <div className="summary-row">
-              <span>Discount</span><span>- ₹{discount.toFixed(2)}</span>
+              <span>Discount</span>
+              <span>- ₹{discount.toFixed(2)}</span>
             </div>
           )}
           <div className="summary-row">
-            <span>Courier Charge</span><span>₹{courierCharge.toFixed(2)}</span>
+            <span>Courier Charge</span>
+            <span>₹{courierCharge.toFixed(2)}</span>
           </div>
           <div className="summary-row total">
-            <span>Grand Total</span><span>₹{grandTotal.toFixed(2)}</span>
+            <span>Grand Total</span>
+            <span>₹{grandTotal.toFixed(2)}</span>
           </div>
         </div>
 
         <div className="button-group">
-          <button className="print-btn" onClick={handlePrint} disabled={downloading}>
-            <Printer size={18} /> {downloading ? 'Preparing...' : 'Print Invoice'}
+          <button
+            className="print-btn"
+            onClick={handlePrint}
+            disabled={downloading}
+          >
+            <Printer size={18} />{" "}
+            {downloading ? "Preparing..." : "Print Invoice"}
           </button>
-          <button className="download-btn" onClick={handleDownload} disabled={downloading}>
-            <Download size={18} /> {downloading ? 'Preparing...' : 'Download PDF'}
+          <button
+            className="download-btn"
+            onClick={handleDownload}
+            disabled={downloading}
+          >
+            <Download size={18} />{" "}
+            {downloading ? "Preparing..." : "Download PDF"}
           </button>
         </div>
       </div>

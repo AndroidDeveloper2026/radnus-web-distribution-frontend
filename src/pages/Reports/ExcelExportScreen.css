@@ -1,29 +1,32 @@
-/* 
+/* ====================================== */
+/* src/pages/Reports/ExcelExportScreen.css */
+/* ====================================== */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* ====================================== */
+/* LIGHT MODE - Default Theme */
+/* ====================================== */
 
+/* Container */
 .excel-export-container {
   min-height: 100vh;
   background: #f5f7fa;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-.excel-export-container.dark {
-  background: #0a0e17;
-}
-
-
+/* Main Content */
 .main-content {
   max-width: 1400px;
   margin: 0 auto;
   padding: 32px;
 }
 
-
+/* Toast Notification */
 .toast-notification {
   position: fixed;
   top: 24px;
@@ -53,7 +56,7 @@
   }
 }
 
-
+/* Header Section */
 .header-section {
   display: flex;
   justify-content: space-between;
@@ -69,18 +72,10 @@
   letter-spacing: -0.5px;
 }
 
-.dark .page-title {
-  color: #ffffff;
-}
-
 .page-subtitle {
   font-size: 14px;
-  color: #64748b;
+  color: #475569;
   margin-top: 8px;
-}
-
-.dark .page-subtitle {
-  color: #94a3b8;
 }
 
 .total-stats-card {
@@ -91,10 +86,6 @@
   text-align: center;
 }
 
-.dark .total-stats-card {
-  background: #1e293b;
-}
-
 .total-stats-value {
   font-size: 28px;
   font-weight: 800;
@@ -103,15 +94,11 @@
 
 .total-stats-label {
   font-size: 13px;
-  color: #64748b;
+  color: #475569;
   margin-top: 4px;
 }
 
-.dark .total-stats-label {
-  color: #94a3b8;
-}
-
-
+/* Search Container */
 .search-container {
   margin-bottom: 20px;
 }
@@ -127,17 +114,8 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.dark .search-wrapper {
-  background: #1e293b;
-  border-color: #334155;
-}
-
 .search-icon {
   color: #94a3b8;
-}
-
-.dark .search-icon {
-  color: #64748b;
 }
 
 .search-input {
@@ -148,10 +126,6 @@
   background: transparent;
   font-size: 14px;
   color: #1e293b;
-}
-
-.dark .search-input {
-  color: #f1f5f9;
 }
 
 .search-input::placeholder {
@@ -166,13 +140,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
 .search-clear:hover {
   color: #ef4444;
+  background: #fef2f2;
 }
 
-
+/* Salesperson Filter Styles */
 .salesperson-filter-container {
   background: white;
   border-radius: 20px;
@@ -180,11 +158,6 @@
   margin-bottom: 20px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.dark .salesperson-filter-container {
-  background: #1e293b;
-  border-color: #334155;
 }
 
 .salesperson-filter-header {
@@ -196,11 +169,6 @@
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid #e2e8f0;
-}
-
-.dark .salesperson-filter-header {
-  color: #e5e7eb;
-  border-bottom-color: #334155;
 }
 
 .salesperson-filter-header svg {
@@ -215,20 +183,14 @@
 
 .salesperson-btn {
   padding: 8px 20px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  color: #4b5563;
+  color: #334155;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-}
-
-.dark .salesperson-btn {
-  background: #0f172a;
-  border-color: #334155;
-  color: #94a3b8;
 }
 
 .salesperson-btn:hover {
@@ -237,17 +199,13 @@
   transform: translateY(-1px);
 }
 
-.dark .salesperson-btn:hover {
-  background: #334155;
-}
-
 .salesperson-btn.active {
   background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
   border-color: transparent;
 }
 
-
+/* Filter Container */
 .filter-container {
   background: white;
   border-radius: 20px;
@@ -255,11 +213,6 @@
   margin-bottom: 20px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.dark .filter-container {
-  background: #1e293b;
-  border-color: #334155;
 }
 
 .filter-header {
@@ -271,20 +224,12 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.dark .filter-header {
-  border-bottom-color: #334155;
-}
-
 .filter-title {
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
   color: #1f2937;
-}
-
-.dark .filter-title {
-  color: #e5e7eb;
 }
 
 .filter-title svg {
@@ -311,11 +256,6 @@
   transform: scale(0.98);
 }
 
-.dark .clear-filter-btn {
-  background: #7f1d1d;
-  color: #fca5a5;
-}
-
 .filter-body {
   display: flex;
   flex-direction: column;
@@ -326,14 +266,10 @@
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: #475569;
   margin-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.dark .filter-group label {
-  color: #9ca3af;
 }
 
 .period-buttons {
@@ -347,30 +283,20 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  color: #4b5563;
+  color: #334155;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.dark .period-btn {
-  background: #0f172a;
-  border-color: #334155;
-  color: #94a3b8;
-}
-
 .period-btn:hover {
   background: white;
   border-color: #667eea;
   transform: translateY(-1px);
-}
-
-.dark .period-btn:hover {
-  background: #334155;
 }
 
 .period-btn.active {
@@ -393,29 +319,19 @@
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: #475569;
   margin-bottom: 6px;
-}
-
-.dark .date-label {
-  color: #9ca3af;
 }
 
 .date-field {
   width: 100%;
   padding: 10px 12px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   color: #1f2937;
   font-size: 14px;
   transition: all 0.2s;
-}
-
-.dark .date-field {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f1f5f9;
 }
 
 .date-field:focus {
@@ -424,7 +340,7 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-
+/* Active Filters Display */
 .active-filters {
   background: #f8fafc;
   border-radius: 12px;
@@ -436,20 +352,12 @@
   gap: 12px;
 }
 
-.dark .active-filters {
-  background: #0f172a;
-}
-
 .active-filters-label {
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.dark .active-filters-label {
-  color: #94a3b8;
 }
 
 .active-filter-tag {
@@ -462,12 +370,6 @@
   border-radius: 8px;
   font-size: 12px;
   color: #1e293b;
-}
-
-.dark .active-filter-tag {
-  background: #1e293b;
-  border-color: #334155;
-  color: #f1f5f9;
 }
 
 .active-filter-tag button {
@@ -488,12 +390,7 @@
   color: #ef4444;
 }
 
-.dark .active-filter-tag button:hover {
-  background: #7f1d1d;
-  color: #fca5a5;
-}
-
-
+/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -509,11 +406,6 @@
   transition: all 0.2s;
 }
 
-.dark .stat-card {
-  background: #1e293b;
-  border-color: #334155;
-}
-
 .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -527,11 +419,8 @@
 
 .stat-card-label {
   font-size: 13px;
-  color: #64748b;
-}
-
-.dark .stat-card-label {
-  color: #94a3b8;
+  font-weight: 500;
+  color: #475569;
 }
 
 .stat-card-dot {
@@ -547,18 +436,14 @@
   margin-top: 8px;
 }
 
-.dark .stat-card-value {
-  color: #ffffff;
-}
-
-
+/* Cards Grid */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 24px;
 }
 
-
+/* Export Card */
 .export-card {
   background: white;
   border-radius: 20px;
@@ -579,27 +464,18 @@
   }
 }
 
-.dark .export-card {
-  background: #1e293b;
-  border-color: #334155;
-}
-
 .export-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
 }
 
-
+/* Card Header */
 .card-header {
   padding: 24px 24px 20px;
   border-bottom: 1px solid #f1f5f9;
   display: flex;
   align-items: center;
   gap: 14px;
-}
-
-.dark .card-header {
-  border-bottom-color: #334155;
 }
 
 .card-icon {
@@ -627,10 +503,6 @@
   gap: 8px;
 }
 
-.dark .card-title {
-  color: #ffffff;
-}
-
 .filter-badge {
   display: inline-block;
   font-size: 10px;
@@ -643,28 +515,21 @@
 
 .card-description {
   font-size: 12px;
-  color: #64748b;
+  color: #475569;
   margin: 4px 0 0;
+  line-height: 1.4;
 }
 
-.dark .card-description {
-  color: #94a3b8;
-}
-
-
+/* Card Stats */
 .card-stats {
   padding: 16px 24px;
   background: #f8fafc;
 }
 
-.dark .card-stats {
-  background: #0f172a;
-}
-
 .stats-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
 }
 
 .stats-label {
@@ -672,11 +537,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #64748b;
-}
-
-.dark .stats-label {
-  color: #94a3b8;
+  color: #475569;
 }
 
 .stats-number {
@@ -684,7 +545,7 @@
   font-weight: 800;
 }
 
-
+/* Card Actions */
 .card-actions {
   padding: 20px 24px 24px;
 }
@@ -707,7 +568,7 @@
 }
 
 .view-data-btn:hover:not(:disabled) {
-  background: var(--btn-color, currentColor);
+  background: currentColor;
   color: white;
 }
 
@@ -737,10 +598,16 @@
 
 .export-btn:hover:not(:disabled) {
   transform: translateX(4px);
+  background: currentColor;
+}
+
+.export-btn:hover:not(:disabled) .export-btn-name,
+.export-btn:hover:not(:disabled) .export-btn-desc {
+  color: white;
 }
 
 .export-btn.exporting {
-  background: var(--btn-color, currentColor);
+  background: currentColor;
   color: white;
 }
 
@@ -757,14 +624,16 @@
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 2px;
+  color: inherit;
 }
 
 .export-btn-desc {
   font-size: 11px;
   opacity: 0.7;
+  color: inherit;
 }
 
-
+/* Card Empty */
 .card-empty {
   margin: 0 24px 24px;
   padding: 10px;
@@ -778,12 +647,7 @@
   color: #d97706;
 }
 
-.dark .card-empty {
-  background: rgba(245, 158, 11, 0.1);
-  color: #fbbf24;
-}
-
-
+/* Spinner */
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -797,6 +661,265 @@
   animation: spin 0.7s linear infinite;
 }
 
+/* ====================================== */
+/* DARK MODE - COMPLETE TRUE DARK THEME */
+/* ====================================== */
+
+/* Main Container - True Dark */
+.excel-export-container.dark {
+  background: #0d0d0d;
+}
+
+/* ====================================== */
+/* ALL CONTAINERS - Remove Blue Tint */
+/* ====================================== */
+
+.excel-export-container.dark .filter-container,
+.excel-export-container.dark .salesperson-filter-container,
+.excel-export-container.dark .total-stats-card,
+.excel-export-container.dark .stat-card,
+.excel-export-container.dark .export-card,
+.excel-export-container.dark .search-wrapper,
+.excel-export-container.dark .card-stats,
+.excel-export-container.dark .active-filters,
+.excel-export-container.dark .active-filter-tag {
+  background: #1a1a1a !important;
+  border-color: #2a2a2a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Card Stats - Slightly darker */
+.excel-export-container.dark .card-stats {
+  background: #121212 !important;
+}
+
+/* ====================================== */
+/* ALL TEXT COLORS - Pure White/Gray */
+/* ====================================== */
+
+.excel-export-container.dark .page-title,
+.excel-export-container.dark .stat-card-value,
+.excel-export-container.dark .card-title,
+.excel-export-container.dark .search-input,
+.excel-export-container.dark .filter-title,
+.excel-export-container.dark .salesperson-filter-header,
+.excel-export-container.dark .stats-number,
+.excel-export-container.dark .sb-user-name,
+.excel-export-container.dark .sb-user-role {
+  color: #ffffff !important;
+}
+
+/* Secondary Text - Light Gray (No Blue Tint) */
+.excel-export-container.dark .page-subtitle,
+.excel-export-container.dark .stat-card-label,
+.excel-export-container.dark .total-stats-label,
+.excel-export-container.dark .filter-group label,
+.excel-export-container.dark .date-label,
+.excel-export-container.dark .active-filters-label,
+.excel-export-container.dark .stats-label,
+.excel-export-container.dark .card-description,
+.excel-export-container.dark .search-input::placeholder {
+  color: #999999 !important;
+}
+
+/* ====================================== */
+/* HEADERS & BORDERS */
+/* ====================================== */
+
+.excel-export-container.dark .card-header,
+.excel-export-container.dark .filter-title,
+.excel-export-container.dark .salesperson-filter-header {
+  border-bottom-color: #2a2a2a !important;
+}
+
+.excel-export-container.dark .filter-header {
+  border-bottom-color: #2a2a2a !important;
+}
+
+/* ====================================== */
+/* BUTTONS - Salesperson & Period */
+/* ====================================== */
+
+.excel-export-container.dark .salesperson-btn,
+.excel-export-container.dark .period-btn {
+  background: #121212 !important;
+  border-color: #2a2a2a !important;
+  color: #cccccc !important;
+}
+
+.excel-export-container.dark .salesperson-btn:hover,
+.excel-export-container.dark .period-btn:hover {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  border-color: #8b5cf6 !important;
+}
+
+.excel-export-container.dark .salesperson-btn.active,
+.excel-export-container.dark .period-btn.active {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+/* ====================================== */
+/* DATE INPUTS */
+/* ====================================== */
+
+.excel-export-container.dark .date-field {
+  background: #121212 !important;
+  border-color: #2a2a2a !important;
+  color: #ffffff !important;
+}
+
+.excel-export-container.dark .date-field:focus {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15) !important;
+}
+
+.excel-export-container.dark .date-field::placeholder {
+  color: #666666 !important;
+}
+
+/* ====================================== */
+/* CLEAR FILTER BUTTON */
+/* ====================================== */
+
+.excel-export-container.dark .clear-filter-btn {
+  background: rgba(220, 38, 38, 0.12) !important;
+  color: #f87171 !important;
+}
+
+.excel-export-container.dark .clear-filter-btn:hover {
+  background: rgba(220, 38, 38, 0.25) !important;
+}
+
+/* ====================================== */
+/* EMPTY STATE */
+/* ====================================== */
+
+.excel-export-container.dark .card-empty {
+  background: rgba(245, 158, 11, 0.08) !important;
+  color: #fbbf24 !important;
+}
+
+/* ====================================== */
+/* EXPORT BUTTONS */
+/* ====================================== */
+
+.excel-export-container.dark .export-btn:hover:not(:disabled) {
+  background: currentColor !important;
+}
+
+.excel-export-container.dark .export-btn:hover:not(:disabled) .export-btn-name,
+.excel-export-container.dark .export-btn:hover:not(:disabled) .export-btn-desc {
+  color: white !important;
+}
+
+/* ====================================== */
+/* VIEW DATA BUTTON */
+/* ====================================== */
+
+.excel-export-container.dark .view-data-btn:hover:not(:disabled) {
+  background: currentColor !important;
+  color: white !important;
+}
+
+/* ====================================== */
+/* SEARCH CLEAR BUTTON */
+/* ====================================== */
+
+.excel-export-container.dark .search-clear:hover {
+  color: #f87171 !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* ====================================== */
+/* ACTIVE FILTER TAG */
+/* ====================================== */
+
+.excel-export-container.dark .active-filter-tag button:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+/* ====================================== */
+/* CARD HOVER EFFECTS */
+/* ====================================== */
+
+.excel-export-container.dark .export-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.6) !important;
+}
+
+.excel-export-container.dark .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ====================================== */
+/* TOAST NOTIFICATION - Keep Green */
+/* ====================================== */
+
+.excel-export-container.dark .toast-notification {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+/* ====================================== */
+/* TOTAL STATS VALUE - Keep Blue Accent */
+/* ====================================== */
+
+.excel-export-container.dark .total-stats-value {
+  color: #60a5fa !important;
+}
+
+/* ====================================== */
+/* SCROLLBAR - Dark Mode */
+/* ====================================== */
+
+.excel-export-container.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.excel-export-container.dark ::-webkit-scrollbar-track {
+  background: #121212 !important;
+}
+
+.excel-export-container.dark ::-webkit-scrollbar-thumb {
+  background: #333333 !important;
+  border-radius: 4px;
+}
+
+.excel-export-container.dark ::-webkit-scrollbar-thumb:hover {
+  background: #444444 !important;
+}
+
+/* ====================================== */
+/* SIDEBAR OVERRIDES - If needed */
+/* ====================================== */
+
+.excel-export-container.dark .sidebar {
+  background: #0d0d0d !important;
+  border-color: #2a2a2a !important;
+}
+
+.excel-export-container.dark .sidebar-nav .nav-item {
+  color: #999999 !important;
+}
+
+.excel-export-container.dark .sidebar-nav .nav-item:hover {
+  color: #ffffff !important;
+  background: #1a1a1a !important;
+}
+
+.excel-export-container.dark .sidebar-nav .nav-item.nav-active {
+  color: #ffffff !important;
+  background: #1a1a1a !important;
+}
+
+/* ====================================== */
+/* RESPONSIVE DESIGN */
+/* ====================================== */
 
 @media (max-width: 768px) {
   .main-content {
@@ -865,11 +988,9 @@
   .card-title {
     justify-content: center;
   }
-} */
+}
 
-/* ====================================== */
-
-/* src/pages/Reports/ExcelExportScreen.css */
+/* 
 
 * {
   margin: 0;
@@ -877,7 +998,7 @@
   box-sizing: border-box;
 }
 
-/* Container */
+
 .excel-export-container {
   min-height: 100vh;
   background: #f5f7fa;
@@ -888,14 +1009,14 @@
   background: #0a0e17;
 }
 
-/* Main Content */
+
 .main-content {
   max-width: 1400px;
   margin: 0 auto;
   padding: 32px;
 }
 
-/* Toast Notification */
+
 .toast-notification {
   position: fixed;
   top: 24px;
@@ -925,7 +1046,7 @@
   }
 }
 
-/* Header Section */
+
 .header-section {
   display: flex;
   justify-content: space-between;
@@ -988,7 +1109,7 @@
   color: #94a3b8;
 }
 
-/* Search Container */
+
 .search-container {
   margin-bottom: 20px;
 }
@@ -1062,7 +1183,7 @@
   background: rgba(239, 68, 68, 0.1);
 }
 
-/* Salesperson Filter Styles */
+
 .salesperson-filter-container {
   background: white;
   border-radius: 20px;
@@ -1139,7 +1260,7 @@
   border-color: transparent;
 }
 
-/* Filter Container */
+
 .filter-container {
   background: white;
   border-radius: 20px;
@@ -1326,7 +1447,7 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
-/* Active Filters Display */
+
 .active-filters {
   background: #f8fafc;
   border-radius: 12px;
@@ -1395,7 +1516,7 @@
   color: #f87171;
 }
 
-/* Stats Grid */
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1458,14 +1579,14 @@
   color: #f1f5f9;
 }
 
-/* Cards Grid */
+
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 24px;
 }
 
-/* Export Card */
+
 .export-card {
   background: white;
   border-radius: 20px;
@@ -1500,7 +1621,7 @@
   box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
 }
 
-/* Card Header */
+
 .card-header {
   padding: 24px 24px 20px;
   border-bottom: 1px solid #f1f5f9;
@@ -1563,7 +1684,7 @@
   color: #94a3b8;
 }
 
-/* Card Stats */
+
 .card-stats {
   padding: 16px 24px;
   background: #f8fafc;
@@ -1596,7 +1717,7 @@
   font-weight: 800;
 }
 
-/* Card Actions */
+
 .card-actions {
   padding: 20px 24px 24px;
 }
@@ -1684,7 +1805,7 @@
   color: inherit;
 }
 
-/* Card Empty */
+
 .card-empty {
   margin: 0 24px 24px;
   padding: 10px;
@@ -1703,7 +1824,7 @@
   color: #fbbf24;
 }
 
-/* Spinner */
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -1717,7 +1838,7 @@
   animation: spin 0.7s linear infinite;
 }
 
-/* Responsive */
+
 @media (max-width: 768px) {
   .main-content {
     padding: 16px;
@@ -1785,4 +1906,4 @@
   .card-title {
     justify-content: center;
   }
-}
+} */
