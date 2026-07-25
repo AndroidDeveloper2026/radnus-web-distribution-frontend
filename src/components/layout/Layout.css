@@ -361,3 +361,147 @@
   from { transform: translateY(30px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* ─── Nav Icon Wrapper for Badge on Icon ──────────────────────────────────── */
+.nav-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* WhatsApp-style badge directly on the icon */
+.nav-badge-on-icon {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+  animation: badgePulse 2s ease-in-out infinite;
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Single digit - perfect circle */
+.nav-badge-on-icon.single-digit {
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px;
+  right: -10px;
+  top: -8px;
+}
+
+/* Double digit - slightly wider */
+.nav-badge-on-icon.double-digit {
+  min-width: 22px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 12px;
+  font-size: 9px;
+  right: -12px;
+  top: -8px;
+}
+
+/* 99+ - compact */
+.nav-badge-on-icon.plus {
+  min-width: 26px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 12px;
+  font-size: 8px;
+  right: -14px;
+  top: -8px;
+  letter-spacing: -0.5px;
+}
+
+/* Badge on collapsed sidebar - same as above but positioned differently */
+.nav-badge-collapsed {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+  animation: badgePulse 2s ease-in-out infinite;
+  z-index: 3;
+}
+
+/* Dropdown badge */
+.dropdown-badge {
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+  border: 2px solid var(--bg-surface);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+/* Pulse animation like WhatsApp */
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ─── Dark mode badge adjustments ───────────────────────────────────────────── */
+[data-theme="dark"] .nav-badge-on-icon {
+  border-color: #1c1d21;
+  background: #ef4444;
+}
+
+[data-theme="dark"] .nav-badge-collapsed {
+  border-color: #1c1d21;
+  background: #ef4444;
+}
+
+[data-theme="dark"] .dropdown-badge {
+  border-color: #1c1d21;
+  background: #ef4444;
+}
+
+/* ─── Hide badge when no pending items ──────────────────────────────────────── */
+.nav-item:not(.nav-item-with-badge) .nav-badge-on-icon,
+.nav-item:not(.nav-item-with-badge) .nav-badge-collapsed {
+  display: none;
+}

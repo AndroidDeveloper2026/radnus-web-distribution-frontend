@@ -20,6 +20,7 @@ import { getManagers } from "./services/features/manager/managerSlice";
 import { getExecutives } from "./services/features/executive/executiveSlice";
 import { fetchFSE } from "./services/features/fse/fseSlice";
 import { fetchTerritory } from "./services/features/Territory/TerritorySlice";
+import { fetchSuppliers } from "./services/features/purchase/supplierSlice";
 
 import AppShell from "./components/layout/AppShell";
 import LoginPage from "./pages/Auth/LoginPage";
@@ -58,6 +59,14 @@ import {
 } from "./pages/Features/FeaturePages";
 import StockMovement from "./pages/StockMovement/StockMovement";
 import ApprovalsPage from "./pages/Approvals/ApprovalsPage";
+import SupplierMasterPage from "./pages/Purchase/SupplierMasterPage";
+import PurchaseEntryPage from "./pages/Purchase/PurchaseEntryPage";
+import PurchaseInvoicePage from "./pages/Purchase/PurchaseInvoicePage";
+import PurchaseHistoryPage from "./pages/Purchase/PurchaseHistoryPage";
+import StockAgingPage from "./pages/Purchase/StockAgingPage";
+import NonMovingStockPage from "./pages/Purchase/NonMovingStockPage";
+// import PriceHistoryPage from "./pages/Purchase/PriceHistoryPage";
+import ProductPriceHistoryPage from "./pages/Purchase/ProductPriceHistoryPage";
 
 import { PageLoader } from "./components/ui/UI";
 
@@ -88,6 +97,13 @@ const ROLE_ROUTES = {
     "purchase-return",
     "excel-export",
     "stock-movement",
+    "supplier-master",
+    "purchase-entry",
+    "purchase-history",
+    "stock-aging",
+    "non-moving-stock",
+    "price-history",
+    "product-price-history",
   ],
   Radnus: [
     "dashboard",
@@ -109,6 +125,13 @@ const ROLE_ROUTES = {
     "purchase-return",
     "excel-export",
     "stock-movement",
+    "supplier-master",
+    "purchase-entry",
+    "purchase-history",
+    "stock-aging",
+    "non-moving-stock",
+    "price-history",
+    "product-price-history",
   ],
   Distributor: [
     "dashboard",
@@ -195,6 +218,7 @@ const DataPrefetcher = () => {
       dispatch(getExecutives());
       dispatch(fetchFSE());
       dispatch(fetchTerritory());
+      // dispatch(fetchSuppliers()); --- ordertype testing---
     }
     if (["MarketingManager", "MarketingExecutive"].includes(role)) {
       dispatch(fetchFSE());
@@ -592,6 +616,88 @@ const AppRouterInner = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* Purchase Module */}
+          {/* <Route
+            path="/purchase/supplier-master"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="supplier-master">
+                  <SupplierMasterPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          /> */}
+          {/* <Route
+            path="/purchase/entry"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="purchase-entry">
+                  <PurchaseEntryPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          /> */}
+          {/* <Route
+            path="/purchase/invoice"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="purchase-entry">
+                  <PurchaseInvoicePage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          /> */}
+          {/* <Route
+            path="/purchase/history"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="purchase-history">
+                  <PurchaseHistoryPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          /> */}
+          {/* <Route
+            path="/purchase/stock-aging"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="stock-aging">
+                  <StockAgingPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          /> */}
+          {/* <Route
+            path="/purchase/non-moving-stock"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="non-moving-stock">
+                  <NonMovingStockPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          /> */}
+          {/* <Route
+            path="/purchase/product-price-history"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="product-price-history">
+                  <ProductPriceHistoryPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/purchase/product-price-history/:productId"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="product-price-history">
+                  <ProductPriceHistoryPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          /> */}
           <Route
             path="/reports"
             element={
@@ -627,7 +733,7 @@ const AppRouter = () => (
 
 export default AppRouter;
 
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // import React, { useEffect } from "react";
 // import {
@@ -651,6 +757,7 @@ export default AppRouter;
 // import { getExecutives } from "./services/features/executive/executiveSlice";
 // import { fetchFSE } from "./services/features/fse/fseSlice";
 // import { fetchTerritory } from "./services/features/Territory/TerritorySlice";
+// import { fetchSuppliers } from "./services/features/purchase/supplierSlice";
 
 // import AppShell from "./components/layout/AppShell";
 // import LoginPage from "./pages/Auth/LoginPage";
@@ -688,12 +795,21 @@ export default AppRouter;
 //   FSEPage,
 // } from "./pages/Features/FeaturePages";
 // import StockMovement from "./pages/StockMovement/StockMovement";
+// import ApprovalsPage from "./pages/Approvals/ApprovalsPage";
+// import SupplierMasterPage from "./pages/Purchase/SupplierMasterPage";
+// import PurchaseEntryPage from "./pages/Purchase/PurchaseEntryPage";
+// import PurchaseHistoryPage from "./pages/Purchase/PurchaseHistoryPage";
+// import StockAgingPage from "./pages/Purchase/StockAgingPage";
+// import NonMovingStockPage from "./pages/Purchase/NonMovingStockPage";
+// // import PriceHistoryPage from "./pages/Purchase/PriceHistoryPage";
+// import ProductPriceHistoryPage from "./pages/Purchase/ProductPriceHistoryPage";
 
 // import { PageLoader } from "./components/ui/UI";
 
 // const ROLE_ROUTES = {
 //   Admin: [
 //     "dashboard",
+//     "approvals",
 //     "products",
 //     "distributors",
 //     "retailers",
@@ -717,6 +833,13 @@ export default AppRouter;
 //     "purchase-return",
 //     "excel-export",
 //     "stock-movement",
+//     "supplier-master",
+//     "purchase-entry",
+//     "purchase-history",
+//     "stock-aging",
+//     "non-moving-stock",
+//     "price-history",
+//     "product-price-history",
 //   ],
 //   Radnus: [
 //     "dashboard",
@@ -738,9 +861,17 @@ export default AppRouter;
 //     "purchase-return",
 //     "excel-export",
 //     "stock-movement",
+//     "supplier-master",
+//     "purchase-entry",
+//     "purchase-history",
+//     "stock-aging",
+//     "non-moving-stock",
+//     "price-history",
+//     "product-price-history",
 //   ],
 //   Distributor: [
 //     "dashboard",
+//     "approvals",
 //     "products",
 //     "retailers",
 //     "orders",
@@ -757,6 +888,7 @@ export default AppRouter;
 //   ],
 //   MarketingManager: [
 //     "dashboard",
+//     "approvals",
 //     "distributors",
 //     "retailers",
 //     "executives",
@@ -775,6 +907,7 @@ export default AppRouter;
 //   ],
 //   FSE: [
 //     "dashboard",
+//     "approvals",
 //     "retailers",
 //     "products",
 //     "orders",
@@ -821,6 +954,7 @@ export default AppRouter;
 //       dispatch(getExecutives());
 //       dispatch(fetchFSE());
 //       dispatch(fetchTerritory());
+//       dispatch(fetchSuppliers());
 //     }
 //     if (["MarketingManager", "MarketingExecutive"].includes(role)) {
 //       dispatch(fetchFSE());
@@ -953,6 +1087,16 @@ export default AppRouter;
 //             element={
 //               <ProtectedRoute>
 //                 <DashboardPage />
+//               </ProtectedRoute>
+//             }
+//           />
+//           <Route
+//             path="/approvals"
+//             element={
+//               <ProtectedRoute>
+//                 <RolePage routeKey="approvals">
+//                   <ApprovalsPage />
+//                 </RolePage>
 //               </ProtectedRoute>
 //             }
 //           />
@@ -1204,6 +1348,88 @@ export default AppRouter;
 //               <ProtectedRoute>
 //                 <RolePage routeKey="purchase-return">
 //                   <PurchaseReturnPage />
+//                 </RolePage>
+//               </ProtectedRoute>
+//             }
+//           />
+
+//           {/* Purchase Module */}
+//           <Route
+//             path="/purchase/supplier-master"
+//             element={
+//               <ProtectedRoute>
+//                 <RolePage routeKey="supplier-master">
+//                   <SupplierMasterPage />
+//                 </RolePage>
+//               </ProtectedRoute>
+//             }
+//           />
+//           <Route
+//             path="/purchase/entry"
+//             element={
+//               <ProtectedRoute>
+//                 <RolePage routeKey="purchase-entry">
+//                   <PurchaseEntryPage />
+//                 </RolePage>
+//               </ProtectedRoute>
+//             }
+//           />
+//           <Route
+//             path="/purchase/history"
+//             element={
+//               <ProtectedRoute>
+//                 <RolePage routeKey="purchase-history">
+//                   <PurchaseHistoryPage />
+//                 </RolePage>
+//               </ProtectedRoute>
+//             }
+//           />
+//           <Route
+//             path="/purchase/stock-aging"
+//             element={
+//               <ProtectedRoute>
+//                 <RolePage routeKey="stock-aging">
+//                   <StockAgingPage />
+//                 </RolePage>
+//               </ProtectedRoute>
+//             }
+//           />
+//           <Route
+//             path="/purchase/non-moving-stock"
+//             element={
+//               <ProtectedRoute>
+//                 <RolePage routeKey="non-moving-stock">
+//                   <NonMovingStockPage />
+//                 </RolePage>
+//               </ProtectedRoute>
+//             }
+//           />
+//           {/* <Route
+//             path="/purchase/price-history"
+//             element={
+//               <ProtectedRoute>
+//                 <RolePage routeKey="price-history">
+//                   <PriceHistoryPage />
+//                 </RolePage>
+//               </ProtectedRoute>
+//             }
+//           /> */}
+//           <Route
+//             path="/purchase/product-price-history"
+//             element={
+//               <ProtectedRoute>
+//                 <RolePage routeKey="product-price-history">
+//                   <ProductPriceHistoryPage />
+//                 </RolePage>
+//               </ProtectedRoute>
+//             }
+//           />
+//           <Route
+//             path="/purchase/product-price-history/:productId"
+//             element={
+//               <ProtectedRoute>
+//                 <RolePage routeKey="product-price-history">
+//                   <ProductPriceHistoryPage />
 //                 </RolePage>
 //               </ProtectedRoute>
 //             }
