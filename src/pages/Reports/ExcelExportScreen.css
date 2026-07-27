@@ -1,3 +1,4 @@
+
 /* ====================================== */
 /* src/pages/Reports/ExcelExportScreen.css */
 /* ====================================== */
@@ -150,7 +151,86 @@
   background: #fef2f2;
 }
 
+/* ====================================== */
+/* ORDER TYPE FILTER - RED THEMED */
+/* ====================================== */
+
+.order-type-filter-container {
+  background: white;
+  border-radius: 20px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.order-type-filter-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.order-type-filter-header svg {
+  color: #dc2626;
+}
+
+.order-type-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.order-type-btn {
+  padding: 8px 20px;
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.order-type-btn:hover {
+  background: white;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+}
+
+.order-type-btn.active {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* OEM specific active state - Blue */
+.order-type-btn.oem-active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* TOOLS specific active state - Red */
+.order-type-btn.tools-active {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* ====================================== */
 /* Salesperson Filter Styles */
+/* ====================================== */
+
 .salesperson-filter-container {
   background: white;
   border-radius: 20px;
@@ -388,6 +468,30 @@
 .active-filter-tag button:hover {
   background: #fee2e2;
   color: #ef4444;
+}
+
+/* Order Type filter tag - Red themed */
+.active-filter-tag.order-type-tag {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.active-filter-tag.order-type-tag button:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* OEM specific tag - Blue */
+.active-filter-tag.order-type-tag.oem-tag {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+
+.active-filter-tag.order-type-tag.oem-tag button:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 /* Stats Grid */
@@ -671,11 +775,12 @@
 }
 
 /* ====================================== */
-/* ALL CONTAINERS - Remove Blue Tint */
+/* ALL CONTAINERS */
 /* ====================================== */
 
 .excel-export-container.dark .filter-container,
 .excel-export-container.dark .salesperson-filter-container,
+.excel-export-container.dark .order-type-filter-container,
 .excel-export-container.dark .total-stats-card,
 .excel-export-container.dark .stat-card,
 .excel-export-container.dark .export-card,
@@ -703,13 +808,12 @@
 .excel-export-container.dark .search-input,
 .excel-export-container.dark .filter-title,
 .excel-export-container.dark .salesperson-filter-header,
-.excel-export-container.dark .stats-number,
-.excel-export-container.dark .sb-user-name,
-.excel-export-container.dark .sb-user-role {
+.excel-export-container.dark .order-type-filter-header,
+.excel-export-container.dark .stats-number {
   color: #ffffff !important;
 }
 
-/* Secondary Text - Light Gray (No Blue Tint) */
+/* Secondary Text - Light Gray */
 .excel-export-container.dark .page-subtitle,
 .excel-export-container.dark .stat-card-label,
 .excel-export-container.dark .total-stats-label,
@@ -728,7 +832,8 @@
 
 .excel-export-container.dark .card-header,
 .excel-export-container.dark .filter-title,
-.excel-export-container.dark .salesperson-filter-header {
+.excel-export-container.dark .salesperson-filter-header,
+.excel-export-container.dark .order-type-filter-header {
   border-bottom-color: #2a2a2a !important;
 }
 
@@ -759,6 +864,44 @@
   background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
   color: white !important;
   border-color: transparent !important;
+}
+
+/* ====================================== */
+/* ORDER TYPE BUTTONS - DARK MODE */
+/* ====================================== */
+
+.excel-export-container.dark .order-type-btn {
+  background: #121212 !important;
+  border-color: #2a2a2a !important;
+  color: #cccccc !important;
+}
+
+.excel-export-container.dark .order-type-btn:hover {
+  background: #2a2a2a !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2) !important;
+}
+
+.excel-export-container.dark .order-type-btn.active {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+}
+
+.excel-export-container.dark .order-type-btn.oem-active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+.excel-export-container.dark .order-type-btn.tools-active {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
 }
 
 /* ====================================== */
@@ -837,9 +980,27 @@
 /* ACTIVE FILTER TAG */
 /* ====================================== */
 
+.excel-export-container.dark .active-filter-tag {
+  background: #1a1a1a !important;
+  border-color: #2a2a2a !important;
+  color: #cccccc !important;
+}
+
 .excel-export-container.dark .active-filter-tag button:hover {
   background: rgba(239, 68, 68, 0.15) !important;
   color: #f87171 !important;
+}
+
+.excel-export-container.dark .active-filter-tag.order-type-tag {
+  background: rgba(220, 38, 38, 0.12) !important;
+  border-color: rgba(220, 38, 38, 0.3) !important;
+  color: #f87171 !important;
+}
+
+.excel-export-container.dark .active-filter-tag.order-type-tag.oem-tag {
+  background: rgba(37, 99, 235, 0.12) !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
+  color: #60a5fa !important;
 }
 
 /* ====================================== */
@@ -895,29 +1056,6 @@
 }
 
 /* ====================================== */
-/* SIDEBAR OVERRIDES - If needed */
-/* ====================================== */
-
-.excel-export-container.dark .sidebar {
-  background: #0d0d0d !important;
-  border-color: #2a2a2a !important;
-}
-
-.excel-export-container.dark .sidebar-nav .nav-item {
-  color: #999999 !important;
-}
-
-.excel-export-container.dark .sidebar-nav .nav-item:hover {
-  color: #ffffff !important;
-  background: #1a1a1a !important;
-}
-
-.excel-export-container.dark .sidebar-nav .nav-item.nav-active {
-  color: #ffffff !important;
-  background: #1a1a1a !important;
-}
-
-/* ====================================== */
 /* RESPONSIVE DESIGN */
 /* ====================================== */
 
@@ -941,13 +1079,15 @@
     padding-bottom: 4px;
   }
   
-  .salesperson-buttons {
+  .salesperson-buttons,
+  .order-type-buttons {
     overflow-x: auto;
     padding-bottom: 4px;
     flex-wrap: nowrap;
   }
   
-  .salesperson-btn {
+  .salesperson-btn,
+  .order-type-btn {
     white-space: nowrap;
   }
   
@@ -989,6 +1129,8 @@
     justify-content: center;
   }
 }
+
+/* =================================================== */
 
 /* 
 
