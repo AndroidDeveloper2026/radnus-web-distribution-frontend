@@ -30,19 +30,20 @@ import './Products.css';
 /* ─── Category & Status options ─── */
 const CAT_OPTS = [
   { value: '', label: 'Select Category' },
-  { value: 'PD Chargers & Car Chargers', label: 'PD Chargers & Car Chargers' },
-  { value: 'Charger', label: 'Charger' },
-  { value: 'Adapter', label: 'Adapter' },
-  { value: 'Data Cables', label: 'Data Cables' },
-  { value: 'Handsfree', label: 'Handsfree' },
-  { value: 'Bluetooth Neckband', label: 'Bluetooth Neckband' },
-  { value: 'Ear Buds', label: 'Ear Buds' },
-  { value: 'Speakers', label: 'Speakers' },
-  { value: 'Radnus Battery', label: 'Radnus Battery' },
-  { value: 'Connector', label: 'Connector' },
-  { value: 'Tools', label: 'Tools' },
-  { value: 'Battery', label: 'Battery' },
-  { value: 'Power Bank', label: 'Power Bank' },
+  { value: 'CAR CHARGERS', label: 'CAR CHARGERS' },
+  { value: 'CHARGER', label: 'CHARGER' },
+  { value: 'ADAPTER', label: 'ADAPTER' },
+  { value: 'DATA CABLES', label: 'DATA CABLES' },
+  { value: 'HANDSFREE', label: 'HANDSFREE' },
+  { value: 'BLUETOOTH NECKBAND', label: 'BLUETOOTH NECKBAND' },
+  { value: 'EAR BUDS', label: 'EAR BUDS' },
+  { value: 'SPEAKERS', label: 'SPEAKERS' },
+  { value: 'CONNECTOR', label: 'CONNECTOR' },
+  { value: 'TOOLS', label: 'TOOLS' },
+  { value: 'MACHINARY', label: 'MACHINARY' },
+  { value: 'BATTERY', label: 'BATTERY' },
+  { value: 'POWER BANK', label: 'POWER BANK' },
+  { value: 'SOFTWARE TOOL', label: 'SOFTWARE TOOL' },
 ];
 
 const STATUS_OPTS = [
