@@ -1,5 +1,4 @@
-/* ─── Shared batch card layout ───────────────────────────────────────────── */
-.batch-card {
+/* .batch-card {
   min-width: 220px;
   flex: 1;
 }
@@ -64,7 +63,6 @@
   color: var(--text-primary);
 }
 
-/* ─── Upcoming batches (collapsible) ─────────────────────────────────────── */
 .batch-upcoming-toggle {
   width: 100%;
   display: flex;
@@ -99,7 +97,6 @@
   font-weight: 600;
 }
 
-/* ─── Batch Allocation Panel ──────────────────────────────────────────────── */
 .batch-allocation-panel {
   border: 1px dashed var(--border);
 }
@@ -149,7 +146,6 @@
   font-weight: 700;
 }
 
-/* ─── Batch Queue ─────────────────────────────────────────────────────────── */
 .batch-queue-title {
   font-size: 13px;
   font-weight: 600;
@@ -190,7 +186,6 @@
   opacity: 0.5;
 }
 
-/* ─── Stock Movement flow ─────────────────────────────────────────────────── */
 .stock-flow-title {
   font-size: 13px;
   font-weight: 600;
@@ -230,7 +225,6 @@
   letter-spacing: 0.03em;
 }
 
-/* ─── FIFO Logic card ─────────────────────────────────────────────────────── */
 .fifo-logic-title {
   font-size: 13px;
   font-weight: 600;
@@ -261,7 +255,6 @@
   text-align: center;
 }
 
-/* ─── Layout helpers used from OrderCartPage ─────────────────────────────── */
 .billing-dashboard {
   display: flex;
   flex-direction: column;
@@ -310,4 +303,4 @@
   .batch-insights-columns { grid-template-columns: 1fr; }
   .batch-cards-row { flex-direction: column; }
   .invoice-summary-stats { grid-template-columns: 1fr; }
-}
+} */

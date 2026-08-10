@@ -1311,3 +1311,79 @@ body {
   gap: 6px;
   align-items: center;
 }
+
+/* ============================================
+   EXISTING CSS (YOUR CURRENT CODE)
+   ============================================ */
+/* ... all your existing CSS here ... */
+
+/* ============================================
+   FIX: ENSURE ADD ITEM & SAVE PURCHASE BUTTONS 
+   VISIBLE IN BOTH LIGHT AND DARK MODES
+   ============================================ */
+
+/* Force ALL buttons to be visible in both modes */
+.btn,
+button.btn,
+button[class*="btn"],
+[class*="btn-primary"] {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Light mode force */
+:root .btn,
+:root button.btn,
+:root button[class*="btn"] {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Dark mode force */
+[data-theme="dark"] .btn,
+[data-theme="dark"] button.btn,
+[data-theme="dark"] button[class*="btn"] {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Specific fix for Add Item button */
+.btn-primary[icon] {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Specific fix for Save Purchase button in PurchaseSummary */
+.btn-primary[fullWidth] {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+}
+
+/* Ensure buttons in light mode have proper background */
+:root .btn-primary {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+:root .btn-primary:hover:not(:disabled) {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* Ensure buttons in dark mode have proper background */
+[data-theme="dark"] .btn-primary {
+  background: var(--red) !important;
+  color: #fff !important;
+}
+
+[data-theme="dark"] .btn-primary:hover:not(:disabled) {
+  background: var(--red-bright) !important;
+  color: #fff !important;
+}

@@ -1,4 +1,92 @@
-/* OrderSuccessPage.css — uses global theme vars from index.css */
+/* ─── Batch Summary Card ─── */
+.batch-summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.batch-summary-card h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.batch-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.batch-summary-item:last-child {
+  border-bottom: none;
+}
+
+.batch-summary-product {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  min-width: 120px;
+}
+
+.batch-summary-batches {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.batch-summary-tag {
+  font-size: 0.7rem;
+  background: var(--bg-input);
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.3rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+/* ─── Confirm Modal Batch Summary ─── */
+.confirm-batch-summary {
+  background: var(--bg-surface);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.confirm-batch-summary h4 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem 0;
+}
+
+.confirm-batch-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  font-size: 0.78rem;
+}
+
+.confirm-batch-product {
+  font-weight: 500;
+  color: var(--text-primary);
+  min-width: 100px;
+}
+
+.confirm-batch-tag {
+  background: var(--bg-card);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--border);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+/* +++++++++++++++++++++++++++++++++++++++++++++++ */
+
 .order-success-page {
   padding: 2rem;
   min-height: 100vh;
@@ -133,7 +221,7 @@
   color: white;
 }
 
-/* Switch row */
+
 .switch-row {
   display: flex;
   justify-content: space-between;
@@ -189,7 +277,7 @@
   gap: 0.4rem;
 }
 
-/* Customer found card */
+
 .found-card {
   background: var(--success-dim);
   border: 1px solid rgba(16,185,129,0.3);
@@ -257,7 +345,7 @@
   font-size: 0.75rem;
 }
 
-/* Total preview */
+
 .total-preview {
   margin-top: 1.5rem;
   padding-top: 1rem;
@@ -285,7 +373,7 @@
   color: var(--success);
 }
 
-/* Primary button */
+
 .primary-btn {
   width: 100%;
   background: var(--red);
@@ -312,7 +400,7 @@
   cursor: not-allowed;
 }
 
-/* Modal */
+
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -412,9 +500,7 @@
   color: var(--text-muted);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ✅ FIXED: Save button now uses flex to perfectly centre the text
-   ═══════════════════════════════════════════════════════════════ */
+
 .save-btn {
   width: 100%;
   background: var(--success);
@@ -425,12 +511,12 @@
   cursor: pointer;
   margin-top: 0.5rem;
   font-weight: 600;
-  display: flex;              /* becomes flex container */
-  align-items: center;        /* vertical centering */
-  justify-content: center;    /* horizontal centering – no quotes */
+  display: flex;              
+  align-items: center;        
+  justify-content: center;    
 }
 
-/* Confirm modal */
+
 .confirm-modal {
   max-width: 450px;
 }
@@ -542,7 +628,7 @@
   color: var(--text-primary);
 }
 
-/* Additional rules from your snippet */
+
 .field-label {
   display: block;
   font-size: 0.85rem;

@@ -18,8 +18,9 @@ import feedbackReducer from '../services/features/retailer/feedbackSlice';
 import profileReducer from '../services/features/profile/profileSlice';
 import returnsReducer from '../services/features/returns/returnsSlice';
 import approvalsReducer from '../services/features/approvals/approvalSlice';
-// import purchaseReducer from '../services/features/purchase/purchaseSlice';
-// import supplierReducer from '../services/features/purchase/supplierSlice';
+import purchaseReducer from '../services/features/purchase/purchaseSlice';
+import supplierReducer from '../services/features/purchase/supplierSlice';
+import billingReducer from '../services/features/billing/billingSlice';
 
 export const store = configureStore({
   reducer: {
@@ -41,7 +42,8 @@ export const store = configureStore({
     profile: profileReducer,
     returns: returnsReducer,
     approvals: approvalsReducer,
-    // purchases: purchaseReducer,
-    // suppliers: supplierReducer,
+    purchases: purchaseReducer,
+    suppliers: supplierReducer,
+    billing: billingReducer,
   },
 });

@@ -102,7 +102,7 @@ const ROLE_ROUTES = {
     "purchase-history",
     "stock-aging",
     "non-moving-stock",
-    "price-history",
+    // "price-history",
     "product-price-history",
   ],
   Radnus: [
@@ -130,7 +130,7 @@ const ROLE_ROUTES = {
     "purchase-history",
     "stock-aging",
     "non-moving-stock",
-    "price-history",
+    // "price-history",
     "product-price-history",
   ],
   Distributor: [
@@ -218,7 +218,7 @@ const DataPrefetcher = () => {
       dispatch(getExecutives());
       dispatch(fetchFSE());
       dispatch(fetchTerritory());
-      // dispatch(fetchSuppliers()); --- ordertype testing---
+      dispatch(fetchSuppliers()); //--- ordertype testing---
     }
     if (["MarketingManager", "MarketingExecutive"].includes(role)) {
       dispatch(fetchFSE());
@@ -618,7 +618,7 @@ const AppRouterInner = () => {
           />
 
           {/* Purchase Module */}
-          {/* <Route
+          <Route
             path="/purchase/supplier-master"
             element={
               <ProtectedRoute>
@@ -627,8 +627,8 @@ const AppRouterInner = () => {
                 </RolePage>
               </ProtectedRoute>
             }
-          /> */}
-          {/* <Route
+          />
+          <Route
             path="/purchase/entry"
             element={
               <ProtectedRoute>
@@ -637,8 +637,8 @@ const AppRouterInner = () => {
                 </RolePage>
               </ProtectedRoute>
             }
-          /> */}
-          {/* <Route
+          />
+          <Route
             path="/purchase/invoice"
             element={
               <ProtectedRoute>
@@ -647,8 +647,8 @@ const AppRouterInner = () => {
                 </RolePage>
               </ProtectedRoute>
             }
-          /> */}
-          {/* <Route
+          />
+          <Route
             path="/purchase/history"
             element={
               <ProtectedRoute>
@@ -657,8 +657,8 @@ const AppRouterInner = () => {
                 </RolePage>
               </ProtectedRoute>
             }
-          /> */}
-          {/* <Route
+          />
+          <Route
             path="/purchase/stock-aging"
             element={
               <ProtectedRoute>
@@ -667,8 +667,8 @@ const AppRouterInner = () => {
                 </RolePage>
               </ProtectedRoute>
             }
-          /> */}
-          {/* <Route
+          />
+          <Route
             path="/purchase/non-moving-stock"
             element={
               <ProtectedRoute>
@@ -677,8 +677,8 @@ const AppRouterInner = () => {
                 </RolePage>
               </ProtectedRoute>
             }
-          /> */}
-          {/* <Route
+          />
+          <Route
             path="/purchase/product-price-history"
             element={
               <ProtectedRoute>
@@ -697,7 +697,7 @@ const AppRouterInner = () => {
                 </RolePage>
               </ProtectedRoute>
             }
-          /> */}
+          />
           <Route
             path="/reports"
             element={
