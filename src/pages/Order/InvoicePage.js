@@ -1,6 +1,5 @@
 
 // src/pages/Invoice/InvoicePage.js
-
 import React, { useRef, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import html2pdf from "html2pdf.js";
