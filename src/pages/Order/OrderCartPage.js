@@ -1,6 +1,5 @@
 
-
-// OrderCartPage.js - COMPLETE FIXED VERSION with batch-price validation
+// OrderCartPage.js - COMPLETE FIXED VERSION with batch-price validation and fallback
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -76,7 +75,6 @@ const BatchPriceSelector = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Combine historical batches with availability info
   const batchesWithAvailability = useMemo(() => {
     if (!batches || batches.length === 0) return [];
     
@@ -93,25 +91,23 @@ const BatchPriceSelector = ({
     }));
   }, [batches, availableBatches]);
 
-  // Filter to only show available batches (stock > 0)
-  // NOTE: each entry retains its `originalIndex` from the full `batches` array,
-  // since `selectedBatchIndex` (and everything downstream that prices the cart
-  // item) always refers to a position in the full, unfiltered batches array —
-  // not a position in this filtered list.
   const availableBatchesList = useMemo(() => {
     return batchesWithAvailability.filter(b => b.isAvailable && b.availableQty > 0);
   }, [batchesWithAvailability]);
 
-  // If no available batches, show "Out of Stock" message
   if (batchesWithAvailability.length === 0) {
     return (
       <div className="batch-info" style={{ 
         fontSize: '0.65rem', 
         color: isDark ? '#666' : '#999',
         marginTop: '2px',
-        fontStyle: 'italic'
+        fontStyle: 'italic',
+        padding: '4px 8px',
+        background: isDark ? '#1a1a22' : '#f5f5f5',
+        borderRadius: '4px',
+        border: `1px dashed ${isDark ? '#3a3a42' : '#ddd'}`
       }}>
-        No batch history
+        <span>No batch history - using default price</span>
       </div>
     );
   }
@@ -123,7 +119,11 @@ const BatchPriceSelector = ({
         color: isDark ? '#e88181' : '#d32f2f',
         marginTop: '2px',
         fontStyle: 'italic',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        padding: '4px 8px',
+        background: isDark ? '#2a1a1a' : '#fde8e8',
+        borderRadius: '4px',
+        border: `1px solid ${isDark ? '#4a2a2a' : '#f5c6c6'}`
       }}>
         ⛔ OUT OF STOCK - No batches available
       </div>
@@ -131,10 +131,6 @@ const BatchPriceSelector = ({
   }
 
   const displayBatchesForSelection = availableBatchesList;
-  // `selectedBatchIndex` indexes into the full `batches` array (batchesWithAvailability
-  // is 1:1 aligned with it), so look the selected batch up there — NOT in the
-  // filtered `displayBatchesForSelection`, whose positions don't line up once any
-  // batch has been filtered out for being out of stock.
   const selectedBatch = batchesWithAvailability[selectedBatchIndex] || displayBatchesForSelection[0];
 
   const INITIAL_DISPLAY_COUNT = 3;
@@ -545,6 +541,17 @@ const ProductRow = ({
     }
   }, [selectedBatch, price]);
 
+  const maxBatchQty = useMemo(() => {
+    if (!availableBatches || availableBatches.length === 0) {
+      return stock;
+    }
+    const batchIndex = Math.min(selectedBatchIndex, availableBatches.length - 1);
+    const batch = availableBatches[batchIndex];
+    return batch ? batch.quantityAvailable || 0 : stock;
+  }, [availableBatches, selectedBatchIndex, stock]);
+
+  const exceedsBatchStock = availableBatches.length > 0 && maxBatchQty > 0 && item.qty > maxBatchQty;
+
   const handleInputChange = (e) => {
     const value = e.target.value;
     setLocalQty(value);
@@ -556,7 +563,7 @@ const ProductRow = ({
     
     const numValue = parseInt(value, 10);
     if (!isNaN(numValue)) {
-      const clampedValue = Math.max(0, Math.min(numValue, stock));
+      const clampedValue = Math.max(0, Math.min(numValue, stock, maxBatchQty || stock));
       onQtyInputChange(item.id, clampedValue);
     }
   };
@@ -565,7 +572,7 @@ const ProductRow = ({
     setIsEditing(false);
     let numValue = parseInt(localQty, 10);
     if (isNaN(numValue)) numValue = 0;
-    const clampedValue = Math.max(0, Math.min(numValue, stock));
+    const clampedValue = Math.max(0, Math.min(numValue, stock, maxBatchQty || stock));
     onQtyInputChange(item.id, clampedValue);
     setLocalQty(clampedValue.toString());
   };
@@ -620,14 +627,11 @@ const ProductRow = ({
     onTogglePriceEdit(item.id);
   };
 
-  const maxBatchQty = useMemo(() => {
-    if (!availableBatches || availableBatches.length === 0) return stock;
-    const batchIndex = Math.min(selectedBatchIndex, availableBatches.length - 1);
-    const batch = availableBatches[batchIndex];
-    return batch ? batch.quantityAvailable || 0 : 0;
-  }, [availableBatches, selectedBatchIndex, stock]);
-
-  const exceedsBatchStock = item.qty > maxBatchQty && maxBatchQty > 0;
+  const isIncrementDisabled = useMemo(() => {
+    const currentQty = item.qty || 0;
+    const maxAllowed = Math.min(stock, maxBatchQty || stock);
+    return currentQty >= maxAllowed;
+  }, [item.qty, stock, maxBatchQty]);
 
   return (
     <div className="product-card">
@@ -747,7 +751,7 @@ const ProductRow = ({
           <button
             className="qty-btn"
             onClick={() => onUpdateQty(item.id, 'inc')}
-            disabled={item.qty >= stock || (maxBatchQty > 0 && item.qty >= maxBatchQty)}
+            disabled={isIncrementDisabled}
           >
             +
           </button>
@@ -780,7 +784,6 @@ const OrderCartPage = () => {
   const hasInitialized = useRef(false);
   const batchFetched = useRef(false);
 
-  // Extract unique categories from products
   const categories = useMemo(() => {
     if (!products.length) return [];
     const cats = new Set();
@@ -791,7 +794,6 @@ const OrderCartPage = () => {
     return Array.from(cats).sort();
   }, [products]);
 
-  // Load products on mount
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -805,7 +807,6 @@ const OrderCartPage = () => {
     loadData();
   }, [dispatch]);
 
-  // Compute available stock directly from product moq
   const stockDataMap = useMemo(() => {
     if (!products.length) return new Map();
 
@@ -832,7 +833,6 @@ const OrderCartPage = () => {
     return stockMap;
   }, [products]);
 
-  // Build cart from stockDataMap
   useEffect(() => {
     if (!stockDataMap.size) return;
     if (hasInitialized.current) return;
@@ -869,7 +869,6 @@ const OrderCartPage = () => {
     hasInitialized.current = true;
   }, [stockDataMap]);
 
-  // Fetch batch information and availability for all products
   useEffect(() => {
     if (!cart.length || batchFetched.current) return;
     
@@ -892,8 +891,6 @@ const OrderCartPage = () => {
     }
   }, [cart, dispatch]);
 
-  // ─── CRITICAL FIX: Sync selectedBatchMap with available batches ──────────
-
   useEffect(() => {
     if (Object.keys(productBatches).length > 0) {
       const newSelectedBatchMap = { ...selectedBatchMap };
@@ -904,7 +901,6 @@ const OrderCartPage = () => {
         const available = batchAvailability[productId] || [];
         
         if (batches.length > 0) {
-          // If no selection yet, select first available batch
           if (selectedBatchMap[productId] === undefined) {
             let validIndex = 0;
             if (available.length > 0) {
@@ -915,13 +911,11 @@ const OrderCartPage = () => {
             newSelectedBatchMap[productId] = validIndex;
             hasChanges = true;
           } else {
-            // Validate that the selected batch is still available
             const currentIndex = selectedBatchMap[productId];
             const currentBatch = batches[currentIndex];
             const isStillAvailable = available.some(b => b.batchNo === currentBatch?.batchNo && b.quantityAvailable > 0);
             
             if (!isStillAvailable && available.length > 0) {
-              // Select first available batch
               const firstAvailableBatch = available[0];
               const historyIndex = batches.findIndex(b => b.batchNo === firstAvailableBatch.batchNo);
               newSelectedBatchMap[productId] = historyIndex >= 0 ? historyIndex : 0;
@@ -937,10 +931,7 @@ const OrderCartPage = () => {
     }
   }, [productBatches, batchAvailability]);
 
-  // ─── CRITICAL FIX: Sync cart when selectedBatchMap changes ───────────────
-
   useEffect(() => {
-    // Skip if no selections or no batches loaded
     if (Object.keys(selectedBatchMap).length === 0) return;
     if (Object.keys(productBatches).length === 0) return;
 
@@ -957,7 +948,6 @@ const OrderCartPage = () => {
       const priceToUse = getPriceFromBatch(selectedBatch, priceType);
       const currentPrice = item.customPrices?.[priceType];
       
-      // Check if this item needs updating
       const needsPriceUpdate = currentPrice !== priceToUse;
       const needsBatchUpdate = item._currentBatchForPrice?.batchNo !== selectedBatch.batchNo;
       
@@ -989,24 +979,25 @@ const OrderCartPage = () => {
     }
   }, [selectedBatchMap, productBatches, priceType]);
 
-  // ─── Update quantity with batch stock validation ──────────────────────────
-
   const updateQty = useCallback((id, type) => {
     setCart(prev => {
       const index = prev.findIndex(item => item.id === id);
       if (index === -1) return prev;
       const oldItem = prev[index];
       let newQty = oldItem.qty;
-      if (type === 'inc') newQty++;
-      if (type === 'dec') newQty--;
       
       const availBatches = batchAvailability[id] || [];
       const batchIndex = selectedBatchMap[id] ?? 0;
       const selectedBatch = availBatches[batchIndex];
       const maxBatchQty = selectedBatch ? selectedBatch.quantityAvailable || 0 : oldItem.currentStock;
+      const maxAllowed = Math.min(oldItem.currentStock, maxBatchQty || oldItem.currentStock);
       
-      newQty = Math.max(0, Math.min(newQty, oldItem.currentStock, maxBatchQty));
+      if (type === 'inc') newQty++;
+      if (type === 'dec') newQty--;
+      
+      newQty = Math.max(0, Math.min(newQty, maxAllowed));
       if (newQty === oldItem.qty) return prev;
+      
       const newItem = { ...oldItem, qty: newQty };
       
       if (oldItem.qty === 0 && newQty > 0) {
@@ -1032,9 +1023,11 @@ const OrderCartPage = () => {
       const batchIndex = selectedBatchMap[id] ?? 0;
       const selectedBatch = availBatches[batchIndex];
       const maxBatchQty = selectedBatch ? selectedBatch.quantityAvailable || 0 : oldItem.currentStock;
+      const maxAllowed = Math.min(oldItem.currentStock, maxBatchQty || oldItem.currentStock);
       
-      const clampedQty = Math.max(0, Math.min(newQty, oldItem.currentStock, maxBatchQty));
+      const clampedQty = Math.max(0, Math.min(newQty, maxAllowed));
       if (clampedQty === oldItem.qty) return prev;
+      
       const newItem = { ...oldItem, qty: clampedQty };
       
       if (oldItem.qty === 0 && clampedQty > 0) {
@@ -1049,8 +1042,6 @@ const OrderCartPage = () => {
       return newCart;
     });
   }, [batchAvailability, selectedBatchMap]);
-
-  // ─── Get price from batch with proper fallback ────────────────────────────
 
   const getPriceFromBatch = useCallback((batch, priceTypeKey) => {
     if (!batch) return 0;
@@ -1069,53 +1060,40 @@ const OrderCartPage = () => {
     }
   }, []);
 
-  // ─── FIXED: Handle batch selection with complete reset ────────────────────
-
   const handleSelectBatch = useCallback((productId, batchIndex) => {
-    // Update selected batch map
     setSelectedBatchMap(prev => ({
       ...prev,
       [productId]: batchIndex
     }));
   }, []);
 
-  // ─── FIXED: Get current price with validation ─────────────────────────────
-
   const getCurrentPrice = useCallback((item) => {
-    // Get selected batch
     const batchIndex = selectedBatchMap[item.id] ?? 0;
     const batches = productBatches[item.id] || [];
     const selectedBatch = batches[batchIndex];
     
-    // Calculate batch price
     let batchPrice = 0;
     if (selectedBatch && selectedBatch.purchasePrice > 0) {
       batchPrice = getPriceFromBatch(selectedBatch, priceType);
     }
     
-    // Check custom price validity
     const customPrice = item.customPrices?.[priceType];
     const isPriceModified = item.priceModified?.[priceType] === true;
     const savedBatchNo = item._currentBatchForPrice?.batchNo;
     const isCustomPriceForCurrentBatch = savedBatchNo === selectedBatch?.batchNo;
     
-    // Return custom price only if it's modified AND for current batch
     if (isPriceModified && 
         isCustomPriceForCurrentBatch && 
         customPrice !== undefined) {
       return customPrice;
     }
     
-    // Otherwise use batch price
     if (batchPrice > 0) {
       return batchPrice;
     }
     
-    // Fallback to product default
     return item[priceType] || 0;
   }, [priceType, productBatches, selectedBatchMap, getPriceFromBatch]);
-
-  // ─── Price editing functions ──────────────────────────────────────────────
 
   const togglePriceEdit = useCallback((id) => {
     setEditingPriceId(prev => prev === id ? null : id);
@@ -1158,7 +1136,6 @@ const OrderCartPage = () => {
   const handlePriceTypeChange = useCallback((newPriceType) => {
     setPriceType(newPriceType);
     
-    // Update all cart items to use the correct price from their selected batch
     setCart(prev => {
       const updatedCart = prev.map(item => {
         const batches = productBatches[item.id] || [];
@@ -1190,8 +1167,6 @@ const OrderCartPage = () => {
       return updatedCart;
     });
   }, [productBatches, selectedBatchMap, getPriceFromBatch]);
-
-  // ─── Filter and sort ───────────────────────────────────────────────────────
 
   const filteredAndSortedCart = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -1240,15 +1215,12 @@ const OrderCartPage = () => {
     [cartItems, getCurrentPrice]
   );
 
-  // ─── FIXED: Place Order with complete reset ──────────────────────────────
-
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
       alert('Please add at least one item to your order.');
       return;
     }
 
-    // Validate stock for each item and build batch allocations
     const validationErrors = [];
     const batchAllocations = {};
 
@@ -1261,15 +1233,20 @@ const OrderCartPage = () => {
       const selectedBatchInfo = allBatches[selectedIndex];
       
       if (!selectedBatchInfo) {
-        validationErrors.push({
+        batchAllocations[item.id] = {
+          productId: item.id,
           name: item.name,
-          error: 'No batch selected'
-        });
+          qty: item.qty,
+          price: item[priceType] || 0,
+          batchAllocations: [],
+          noBatch: true,
+          useDefaultPrice: true
+        };
         return;
       }
 
-      const maxQty = selectedBatch ? selectedBatch.quantityAvailable || 0 : 0;
-      if (item.qty > maxQty) {
+      const maxQty = selectedBatch ? selectedBatch.quantityAvailable || 0 : item.currentStock;
+      if (item.qty > maxQty && maxQty > 0) {
         validationErrors.push({
           name: item.name,
           maxQty: maxQty,
@@ -1294,9 +1271,7 @@ const OrderCartPage = () => {
 
     if (validationErrors.length > 0) {
       const errorMsg = validationErrors.map(e => 
-        e.error 
-          ? `${e.name}: ${e.error}`
-          : `${e.name}: Requested ${e.requestedQty}, Available ${e.maxQty}`
+        `${e.name}: Requested ${e.requestedQty}, Available ${e.maxQty}`
       ).join('\n');
       alert(`Cannot place order:\n${errorMsg}`);
       return;
@@ -1312,7 +1287,9 @@ const OrderCartPage = () => {
         price: getCurrentPrice(item) || 0,
         originalPrice: item[priceType] || 0,
         priceModified: item.priceModified?.[priceType] || false,
-        batchAllocations: batchAllocations[item.id]?.batchAllocations || []
+        batchAllocations: batchAllocations[item.id]?.batchAllocations || [],
+        noBatch: batchAllocations[item.id]?.noBatch || false,
+        useDefaultPrice: batchAllocations[item.id]?.useDefaultPrice || false
       }));
 
       navigate('/order-success', {
@@ -1324,20 +1301,14 @@ const OrderCartPage = () => {
           priceType: priceType,
           batchSelections: batchAllocations,
           showBatchSelector: true,
+          hasDefaultBatches: Object.values(batchAllocations).some(b => b.noBatch || b.useDefaultPrice)
         }
       });
 
-      // ✅ COMPLETE RESET after order
       setCart(prev => {
         const updatedCart = prev.map(item => {
           const orderedItem = cartItems.find(ci => ci.id === item.id);
           if (orderedItem) {
-            const usedBatch = batchAllocations[item.id]?.batchAllocations[0];
-            const availBatches = batchAvailability[item.id] || [];
-            const batchStillAvailable = availBatches.some(
-              b => b.batchNo === usedBatch?.batchNumber && b.quantityAvailable > 0
-            );
-            
             const newStock = Math.max(0, item.currentStock - orderedItem.qty);
             
             return {
@@ -1575,9 +1546,8 @@ const OrderCartPage = () => {
 
 export default OrderCartPage;
 
-
-//--------- working code before qty --------------
-// // OrderCartPage.js - UPDATED with batch availability and stock reduction
+//--------------- 11.08.2026 --------------------------------
+// // OrderCartPage.js - COMPLETE FIXED VERSION with batch-price validation
 
 // import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 // import { useDispatch, useSelector } from 'react-redux';
@@ -1589,7 +1559,7 @@ export default OrderCartPage;
 
 // import { 
 //   Search, X, Package, ShoppingCart, Filter, Edit3, Save, XCircle, 
-//   Check, ChevronDown, Tag, Calendar, ChevronUp
+//   Check, ChevronDown, Tag, Calendar, ChevronUp, AlertCircle
 // } from 'lucide-react';
 // import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
@@ -1629,14 +1599,15 @@ export default OrderCartPage;
 // };
 // // -------------------------------------------------------
 
-// // ─── Batch Price Selector Component (UPDATED with available quantity) ──────
+// // ─── Batch Price Selector Component ──────────────────────────────────────
+
 // const BatchPriceSelector = ({ 
 //   batches, 
 //   selectedBatchIndex, 
 //   onSelectBatch,
 //   productName,
 //   isDark,
-//   availableBatches = []  // NEW: batches with available quantity
+//   availableBatches = []
 // }) => {
 //   const [isOpen, setIsOpen] = useState(false);
 //   const [showAll, setShowAll] = useState(false);
@@ -1656,25 +1627,29 @@ export default OrderCartPage;
 //   const batchesWithAvailability = useMemo(() => {
 //     if (!batches || batches.length === 0) return [];
     
-//     // Create a map of batchNo -> available quantity
 //     const availMap = {};
 //     availableBatches.forEach(b => {
 //       availMap[b.batchNo] = b.quantityAvailable || 0;
 //     });
     
-//     // Add availability info to each batch
-//     return batches.map(batch => ({
+//     return batches.map((batch, originalIndex) => ({
 //       ...batch,
+//       originalIndex,
 //       availableQty: availMap[batch.batchNo] || 0,
 //       isAvailable: (availMap[batch.batchNo] || 0) > 0
 //     }));
 //   }, [batches, availableBatches]);
 
-//   // Filter to only show available batches
+//   // Filter to only show available batches (stock > 0)
+//   // NOTE: each entry retains its `originalIndex` from the full `batches` array,
+//   // since `selectedBatchIndex` (and everything downstream that prices the cart
+//   // item) always refers to a position in the full, unfiltered batches array —
+//   // not a position in this filtered list.
 //   const availableBatchesList = useMemo(() => {
-//     return batchesWithAvailability.filter(b => b.isAvailable);
+//     return batchesWithAvailability.filter(b => b.isAvailable && b.availableQty > 0);
 //   }, [batchesWithAvailability]);
 
+//   // If no available batches, show "Out of Stock" message
 //   if (batchesWithAvailability.length === 0) {
 //     return (
 //       <div className="batch-info" style={{ 
@@ -1688,13 +1663,26 @@ export default OrderCartPage;
 //     );
 //   }
 
-//   // Use available batches for selection, fallback to all if none available
-//   const displayBatchesForSelection = availableBatchesList.length > 0 
-//     ? availableBatchesList 
-//     : batchesWithAvailability;
+//   if (availableBatchesList.length === 0) {
+//     return (
+//       <div className="batch-info" style={{ 
+//         fontSize: '0.65rem', 
+//         color: isDark ? '#e88181' : '#d32f2f',
+//         marginTop: '2px',
+//         fontStyle: 'italic',
+//         fontWeight: 'bold'
+//       }}>
+//         ⛔ OUT OF STOCK - No batches available
+//       </div>
+//     );
+//   }
 
-//   const validIndex = Math.min(selectedBatchIndex, displayBatchesForSelection.length - 1);
-//   const selectedBatch = displayBatchesForSelection[validIndex] || displayBatchesForSelection[0];
+//   const displayBatchesForSelection = availableBatchesList;
+//   // `selectedBatchIndex` indexes into the full `batches` array (batchesWithAvailability
+//   // is 1:1 aligned with it), so look the selected batch up there — NOT in the
+//   // filtered `displayBatchesForSelection`, whose positions don't line up once any
+//   // batch has been filtered out for being out of stock.
+//   const selectedBatch = batchesWithAvailability[selectedBatchIndex] || displayBatchesForSelection[0];
 
 //   const INITIAL_DISPLAY_COUNT = 3;
 //   const displayBatches = showAll 
@@ -1730,12 +1718,6 @@ export default OrderCartPage;
 //           minHeight: '30px',
 //           userSelect: 'none'
 //         }}
-//         onMouseEnter={(e) => {
-//           e.currentTarget.style.borderColor = isDark ? '#5a5a62' : '#cbd5e1';
-//         }}
-//         onMouseLeave={(e) => {
-//           e.currentTarget.style.borderColor = isDark ? '#3a3a42' : '#e2e8f0';
-//         }}
 //       >
 //         <Tag size={12} style={{ color: isDark ? '#888' : '#666', flexShrink: 0 }} />
 //         <span style={{ 
@@ -1753,12 +1735,15 @@ export default OrderCartPage;
 //         }}>
 //           ₹{Number(selectedBatch.purchasePrice || 0).toFixed(2)}
 //         </span>
-//         {/* NEW: Show available quantity */}
 //         <span style={{ 
 //           fontSize: '0.55rem', 
 //           fontWeight: '600',
-//           color: isDark ? '#ffb74d' : '#e65100',
-//           background: isDark ? '#3a2a1a' : '#fff3e0',
+//           color: selectedBatch.availableQty > 0 
+//             ? (isDark ? '#ffb74d' : '#e65100')
+//             : (isDark ? '#666' : '#999'),
+//           background: selectedBatch.availableQty > 0 
+//             ? (isDark ? '#3a2a1a' : '#fff3e0')
+//             : 'transparent',
 //           padding: '1px 6px',
 //           borderRadius: '8px'
 //         }}>
@@ -1844,7 +1829,7 @@ export default OrderCartPage;
 //           </div>
           
 //           {displayBatches.map((batch, index) => {
-//             const isSelected = index === validIndex;
+//             const isSelected = batch.originalIndex === selectedBatchIndex;
 //             const isNewest = index === 0;
 //             const isOldest = index === displayBatchesForSelection.length - 1 && displayBatchesForSelection.length > 1;
             
@@ -1855,7 +1840,7 @@ export default OrderCartPage;
 //                 onClick={(e) => {
 //                   e.stopPropagation();
 //                   if (batch.availableQty > 0) {
-//                     onSelectBatch(index);
+//                     onSelectBatch(batch.originalIndex);
 //                     setIsOpen(false);
 //                     setShowAll(false);
 //                   }
@@ -1909,7 +1894,6 @@ export default OrderCartPage;
 //                     }}>
 //                       ₹{Number(batch.purchasePrice || 0).toFixed(2)}
 //                     </span>
-//                     {/* NEW: Show available quantity in dropdown */}
 //                     <span style={{ 
 //                       fontSize: '0.6rem',
 //                       fontWeight: '600',
@@ -1918,7 +1902,7 @@ export default OrderCartPage;
 //                       padding: '1px 6px',
 //                       borderRadius: '8px'
 //                     }}>
-//                       Qty: {batch.availableQty || 0}
+//                       Stock: {batch.availableQty || 0}
 //                     </span>
 //                     {isNewest && (
 //                       <span style={{
@@ -1931,7 +1915,7 @@ export default OrderCartPage;
 //                         textTransform: 'uppercase',
 //                         letterSpacing: '0.3px'
 //                       }}>
-//                         Newest
+//                         NEWEST
 //                       </span>
 //                     )}
 //                     {isOldest && displayBatchesForSelection.length > 1 && (
@@ -1945,7 +1929,7 @@ export default OrderCartPage;
 //                         textTransform: 'uppercase',
 //                         letterSpacing: '0.3px'
 //                       }}>
-//                         Oldest (FIFO)
+//                         OLDEST (FIFO)
 //                       </span>
 //                     )}
 //                     {batch.availableQty === 0 && (
@@ -1956,9 +1940,10 @@ export default OrderCartPage;
 //                         color: isDark ? '#e88181' : '#b91c1c',
 //                         padding: '1px 6px',
 //                         borderRadius: '8px',
-//                         textTransform: 'uppercase'
+//                         textTransform: 'uppercase',
+//                         letterSpacing: '0.3px'
 //                       }}>
-//                         OUT OF STOCK
+//                         ⛔ OUT OF STOCK
 //                       </span>
 //                     )}
 //                   </div>
@@ -2037,7 +2022,8 @@ export default OrderCartPage;
 //   );
 // };
 
-// // ─── Price Type Selector ──────────────────────────────────────
+// // ─── Price Type Selector ────────────────────────────────────────────────────
+
 // const PriceTypeSelector = ({ priceType, onSelectPriceType }) => {
 //   const options = [
 //     { label: 'Retailer', value: 'retailerPrice' },
@@ -2061,7 +2047,8 @@ export default OrderCartPage;
 //   );
 // };
 
-// // ─── Product Row ──────────────────────────────────────────────
+// // ─── Product Row ─────────────────────────────────────────────────────────────
+
 // const ProductRow = ({ 
 //   item, 
 //   onUpdateQty, 
@@ -2075,7 +2062,7 @@ export default OrderCartPage;
 //   selectedBatchIndex,
 //   onSelectBatch,
 //   isDark,
-//   availableBatches = []  // NEW
+//   availableBatches = []
 // }) => {
 //   const stock = item.currentStock || 0;
 //   const [localQty, setLocalQty] = useState(item.qty.toString());
@@ -2180,15 +2167,13 @@ export default OrderCartPage;
 //     onTogglePriceEdit(item.id);
 //   };
 
-//   // Get max available quantity from selected batch
 //   const maxBatchQty = useMemo(() => {
 //     if (!availableBatches || availableBatches.length === 0) return stock;
 //     const batchIndex = Math.min(selectedBatchIndex, availableBatches.length - 1);
 //     const batch = availableBatches[batchIndex];
 //     return batch ? batch.quantityAvailable || 0 : 0;
-//   }, [availableBatches, selectedBatchIndex]);
+//   }, [availableBatches, selectedBatchIndex, stock]);
 
-//   // Show warning if selected quantity exceeds available batch stock
 //   const exceedsBatchStock = item.qty > maxBatchQty && maxBatchQty > 0;
 
 //   return (
@@ -2218,14 +2203,17 @@ export default OrderCartPage;
 //             />
 //           </div>
           
-//           {/* NEW: Show batch stock warning */}
 //           {exceedsBatchStock && (
 //             <div style={{ 
 //               fontSize: '0.6rem', 
 //               color: '#d32f2f',
-//               marginTop: '2px'
+//               marginTop: '2px',
+//               display: 'flex',
+//               alignItems: 'center',
+//               gap: '4px'
 //             }}>
-//               ⚠️ Quantity exceeds available stock for this batch ({maxBatchQty} units)
+//               <AlertCircle size={12} />
+//               Quantity exceeds available stock for this batch ({maxBatchQty} units)
 //             </div>
 //           )}
           
@@ -2261,6 +2249,16 @@ export default OrderCartPage;
 //             ) : (
 //               <>
 //                 <span className="product-price">₹{Number(price).toLocaleString('en-IN')}</span>
+//                 {selectedBatch && (
+//                   <span style={{
+//                     fontSize: '0.55rem',
+//                     color: isDark ? '#666' : '#999',
+//                     marginLeft: '2px',
+//                     fontFamily: 'monospace'
+//                   }}>
+//                     ({selectedBatch.batchNo})
+//                   </span>
+//                 )}
 //                 <button 
 //                   className="price-edit-toggle-btn"
 //                   onClick={() => onTogglePriceEdit(item.id)}
@@ -2306,7 +2304,8 @@ export default OrderCartPage;
 //   );
 // };
 
-// // ─── Main Component ────────────────────────────────────────────
+// // ─── Main Component ─────────────────────────────────────────────────────────
+
 // const OrderCartPage = () => {
 //   const dispatch = useDispatch();
 //   const navigate = useNavigate();
@@ -2324,7 +2323,7 @@ export default OrderCartPage;
 //   const [priceType, setPriceType] = useState('retailerPrice');
 //   const [editingPriceId, setEditingPriceId] = useState(null);
 //   const [selectedBatchMap, setSelectedBatchMap] = useState({});
-//   const [batchAvailability, setBatchAvailability] = useState({}); // NEW: Store available batch quantities
+//   const [batchAvailability, setBatchAvailability] = useState({});
 //   const hasInitialized = useRef(false);
 //   const batchFetched = useRef(false);
 
@@ -2411,6 +2410,7 @@ export default OrderCartPage;
 //       },
 //       addedToCartAt: null,
 //       selectedBatchIndex: 0,
+//       _currentBatchForPrice: null,
 //     }));
 //     setCart(newCart);
 //     hasInitialized.current = true;
@@ -2422,10 +2422,8 @@ export default OrderCartPage;
     
 //     const productIds = cart.map(item => item.id).filter(id => id);
 //     if (productIds.length > 0) {
-//       // Fetch batch history
 //       dispatch(fetchProductBatches(productIds));
       
-//       // NEW: Fetch batch availability for each product
 //       productIds.forEach(productId => {
 //         dispatch(fetchBatchAvailability(productId)).then((result) => {
 //           if (result.payload) {
@@ -2441,7 +2439,8 @@ export default OrderCartPage;
 //     }
 //   }, [cart, dispatch]);
 
-//   // When batches load, set default selection to first available batch
+//   // ─── CRITICAL FIX: Sync selectedBatchMap with available batches ──────────
+
 //   useEffect(() => {
 //     if (Object.keys(productBatches).length > 0) {
 //       const newSelectedBatchMap = { ...selectedBatchMap };
@@ -2451,17 +2450,31 @@ export default OrderCartPage;
 //         const batches = productBatches[productId] || [];
 //         const available = batchAvailability[productId] || [];
         
-//         if (batches.length > 0 && selectedBatchMap[productId] === undefined) {
-//           // Find first batch that has available stock
-//           let validIndex = 0;
-//           if (available.length > 0) {
-//             // Find the matching batch in the history list
-//             const firstAvailableBatch = available[0];
-//             const historyIndex = batches.findIndex(b => b.batchNo === firstAvailableBatch.batchNo);
-//             validIndex = historyIndex >= 0 ? historyIndex : 0;
+//         if (batches.length > 0) {
+//           // If no selection yet, select first available batch
+//           if (selectedBatchMap[productId] === undefined) {
+//             let validIndex = 0;
+//             if (available.length > 0) {
+//               const firstAvailableBatch = available[0];
+//               const historyIndex = batches.findIndex(b => b.batchNo === firstAvailableBatch.batchNo);
+//               validIndex = historyIndex >= 0 ? historyIndex : 0;
+//             }
+//             newSelectedBatchMap[productId] = validIndex;
+//             hasChanges = true;
+//           } else {
+//             // Validate that the selected batch is still available
+//             const currentIndex = selectedBatchMap[productId];
+//             const currentBatch = batches[currentIndex];
+//             const isStillAvailable = available.some(b => b.batchNo === currentBatch?.batchNo && b.quantityAvailable > 0);
+            
+//             if (!isStillAvailable && available.length > 0) {
+//               // Select first available batch
+//               const firstAvailableBatch = available[0];
+//               const historyIndex = batches.findIndex(b => b.batchNo === firstAvailableBatch.batchNo);
+//               newSelectedBatchMap[productId] = historyIndex >= 0 ? historyIndex : 0;
+//               hasChanges = true;
+//             }
 //           }
-//           newSelectedBatchMap[productId] = validIndex;
-//           hasChanges = true;
 //         }
 //       });
       
@@ -2470,6 +2483,60 @@ export default OrderCartPage;
 //       }
 //     }
 //   }, [productBatches, batchAvailability]);
+
+//   // ─── CRITICAL FIX: Sync cart when selectedBatchMap changes ───────────────
+
+//   useEffect(() => {
+//     // Skip if no selections or no batches loaded
+//     if (Object.keys(selectedBatchMap).length === 0) return;
+//     if (Object.keys(productBatches).length === 0) return;
+
+//     let needsUpdate = false;
+//     const updatedCart = cart.map(item => {
+//       const batchIndex = selectedBatchMap[item.id];
+//       if (batchIndex === undefined) return item;
+      
+//       const batches = productBatches[item.id] || [];
+//       const selectedBatch = batches[batchIndex];
+      
+//       if (!selectedBatch) return item;
+      
+//       const priceToUse = getPriceFromBatch(selectedBatch, priceType);
+//       const currentPrice = item.customPrices?.[priceType];
+      
+//       // Check if this item needs updating
+//       const needsPriceUpdate = currentPrice !== priceToUse;
+//       const needsBatchUpdate = item._currentBatchForPrice?.batchNo !== selectedBatch.batchNo;
+      
+//       if (needsPriceUpdate || needsBatchUpdate) {
+//         needsUpdate = true;
+//         return {
+//           ...item,
+//           customPrices: {
+//             ...item.customPrices,
+//             [priceType]: priceToUse
+//           },
+//           priceModified: {
+//             ...item.priceModified,
+//             [priceType]: false
+//           },
+//           selectedBatchIndex: batchIndex,
+//           _currentBatchForPrice: {
+//             batchNo: selectedBatch.batchNo,
+//             priceType: priceType,
+//             price: priceToUse
+//           }
+//         };
+//       }
+//       return item;
+//     });
+
+//     if (needsUpdate) {
+//       setCart(updatedCart);
+//     }
+//   }, [selectedBatchMap, productBatches, priceType]);
+
+//   // ─── Update quantity with batch stock validation ──────────────────────────
 
 //   const updateQty = useCallback((id, type) => {
 //     setCart(prev => {
@@ -2480,7 +2547,6 @@ export default OrderCartPage;
 //       if (type === 'inc') newQty++;
 //       if (type === 'dec') newQty--;
       
-//       // NEW: Check against batch availability
 //       const availBatches = batchAvailability[id] || [];
 //       const batchIndex = selectedBatchMap[id] ?? 0;
 //       const selectedBatch = availBatches[batchIndex];
@@ -2509,7 +2575,6 @@ export default OrderCartPage;
 //       if (index === -1) return prev;
 //       const oldItem = prev[index];
       
-//       // NEW: Check against batch availability
 //       const availBatches = batchAvailability[id] || [];
 //       const batchIndex = selectedBatchMap[id] ?? 0;
 //       const selectedBatch = availBatches[batchIndex];
@@ -2532,6 +2597,8 @@ export default OrderCartPage;
 //     });
 //   }, [batchAvailability, selectedBatchMap]);
 
+//   // ─── Get price from batch with proper fallback ────────────────────────────
+
 //   const getPriceFromBatch = useCallback((batch, priceTypeKey) => {
 //     if (!batch) return 0;
     
@@ -2549,52 +2616,53 @@ export default OrderCartPage;
 //     }
 //   }, []);
 
+//   // ─── FIXED: Handle batch selection with complete reset ────────────────────
+
 //   const handleSelectBatch = useCallback((productId, batchIndex) => {
 //     // Update selected batch map
 //     setSelectedBatchMap(prev => ({
 //       ...prev,
 //       [productId]: batchIndex
 //     }));
+//   }, []);
 
-//     // Get the selected batch from history
-//     const batches = productBatches[productId] || [];
+//   // ─── FIXED: Get current price with validation ─────────────────────────────
+
+//   const getCurrentPrice = useCallback((item) => {
+//     // Get selected batch
+//     const batchIndex = selectedBatchMap[item.id] ?? 0;
+//     const batches = productBatches[item.id] || [];
 //     const selectedBatch = batches[batchIndex];
     
+//     // Calculate batch price
+//     let batchPrice = 0;
 //     if (selectedBatch && selectedBatch.purchasePrice > 0) {
-//       const priceToUse = getPriceFromBatch(selectedBatch, priceType);
-      
-//       // Update the cart item price
-//       setCart(prev => {
-//         const index = prev.findIndex(item => item.id === productId);
-//         if (index === -1) return prev;
-//         const item = prev[index];
-        
-//         // NEW: Reset quantity if it exceeds batch availability
-//         const availBatches = batchAvailability[productId] || [];
-//         const availBatch = availBatches.find(b => b.batchNo === selectedBatch.batchNo);
-//         const maxQty = availBatch ? availBatch.quantityAvailable || 0 : item.currentStock;
-//         const newQty = Math.min(item.qty, maxQty);
-        
-//         const updatedItem = {
-//           ...item,
-//           qty: newQty,
-//           customPrices: {
-//             ...item.customPrices,
-//             [priceType]: priceToUse
-//           },
-//           priceModified: {
-//             ...item.priceModified,
-//             [priceType]: true
-//           },
-//           selectedBatchIndex: batchIndex
-//         };
-        
-//         const newCart = [...prev];
-//         newCart[index] = updatedItem;
-//         return newCart;
-//       });
+//       batchPrice = getPriceFromBatch(selectedBatch, priceType);
 //     }
-//   }, [productBatches, priceType, getPriceFromBatch, batchAvailability]);
+    
+//     // Check custom price validity
+//     const customPrice = item.customPrices?.[priceType];
+//     const isPriceModified = item.priceModified?.[priceType] === true;
+//     const savedBatchNo = item._currentBatchForPrice?.batchNo;
+//     const isCustomPriceForCurrentBatch = savedBatchNo === selectedBatch?.batchNo;
+    
+//     // Return custom price only if it's modified AND for current batch
+//     if (isPriceModified && 
+//         isCustomPriceForCurrentBatch && 
+//         customPrice !== undefined) {
+//       return customPrice;
+//     }
+    
+//     // Otherwise use batch price
+//     if (batchPrice > 0) {
+//       return batchPrice;
+//     }
+    
+//     // Fallback to product default
+//     return item[priceType] || 0;
+//   }, [priceType, productBatches, selectedBatchMap, getPriceFromBatch]);
+
+//   // ─── Price editing functions ──────────────────────────────────────────────
 
 //   const togglePriceEdit = useCallback((id) => {
 //     setEditingPriceId(prev => prev === id ? null : id);
@@ -2606,6 +2674,10 @@ export default OrderCartPage;
 //       if (index === -1) return prev;
       
 //       const item = prev[index];
+//       const batches = productBatches[item.id] || [];
+//       const batchIndex = selectedBatchMap[item.id] ?? 0;
+//       const selectedBatch = batches[batchIndex];
+      
 //       const updatedItem = {
 //         ...item,
 //         customPrices: {
@@ -2615,6 +2687,11 @@ export default OrderCartPage;
 //         priceModified: {
 //           ...item.priceModified,
 //           [priceType]: true
+//         },
+//         _currentBatchForPrice: {
+//           batchNo: selectedBatch?.batchNo || null,
+//           priceType: priceType,
+//           price: newPrice
 //         }
 //       };
       
@@ -2623,26 +2700,7 @@ export default OrderCartPage;
 //       return newCart;
 //     });
 //     setEditingPriceId(null);
-//   }, [priceType]);
-
-//   const getCurrentPrice = useCallback((item) => {
-//     // First check if custom price exists (user manually edited)
-//     if (item.customPrices && item.customPrices[priceType] !== undefined && item.priceModified?.[priceType]) {
-//       return item.customPrices[priceType];
-//     }
-    
-//     // Then check if there's a selected batch price
-//     const batches = productBatches[item.id] || [];
-//     const batchIndex = selectedBatchMap[item.id] ?? 0;
-//     const selectedBatch = batches[batchIndex];
-    
-//     if (selectedBatch && selectedBatch.purchasePrice > 0) {
-//       return getPriceFromBatch(selectedBatch, priceType);
-//     }
-    
-//     // Fallback to default price
-//     return item[priceType] || 0;
-//   }, [priceType, productBatches, selectedBatchMap, getPriceFromBatch]);
+//   }, [priceType, productBatches, selectedBatchMap]);
 
 //   const handlePriceTypeChange = useCallback((newPriceType) => {
 //     setPriceType(newPriceType);
@@ -2665,7 +2723,12 @@ export default OrderCartPage;
 //             },
 //             priceModified: {
 //               ...item.priceModified,
-//               [newPriceType]: true
+//               [newPriceType]: false
+//             },
+//             _currentBatchForPrice: {
+//               batchNo: selectedBatch.batchNo,
+//               priceType: newPriceType,
+//               price: priceToUse
 //             }
 //           };
 //         }
@@ -2675,7 +2738,8 @@ export default OrderCartPage;
 //     });
 //   }, [productBatches, selectedBatchMap, getPriceFromBatch]);
 
-//   // Filter and sort
+//   // ─── Filter and sort ───────────────────────────────────────────────────────
+
 //   const filteredAndSortedCart = useMemo(() => {
 //     const query = searchQuery.trim().toLowerCase();
     
@@ -2723,7 +2787,7 @@ export default OrderCartPage;
 //     [cartItems, getCurrentPrice]
 //   );
 
-//   // ─── UPDATED: Place Order with Batch Stock Reduction ──────────────────────────
+//   // ─── FIXED: Place Order with complete reset ──────────────────────────────
 
 //   const handlePlaceOrder = async () => {
 //     if (cartItems.length === 0) {
@@ -2731,28 +2795,57 @@ export default OrderCartPage;
 //       return;
 //     }
 
-//     // Validate that quantities don't exceed batch availability
+//     // Validate stock for each item and build batch allocations
 //     const validationErrors = [];
+//     const batchAllocations = {};
+
 //     cartItems.forEach(item => {
 //       const availBatches = batchAvailability[item.id] || [];
-//       const batchIndex = selectedBatchMap[item.id] ?? 0;
-//       const selectedBatch = availBatches[batchIndex];
-//       const maxQty = selectedBatch ? selectedBatch.quantityAvailable || 0 : 0;
+//       const selectedIndex = selectedBatchMap[item.id] ?? 0;
+//       const selectedBatch = availBatches[selectedIndex];
       
+//       const allBatches = productBatches[item.id] || [];
+//       const selectedBatchInfo = allBatches[selectedIndex];
+      
+//       if (!selectedBatchInfo) {
+//         validationErrors.push({
+//           name: item.name,
+//           error: 'No batch selected'
+//         });
+//         return;
+//       }
+
+//       const maxQty = selectedBatch ? selectedBatch.quantityAvailable || 0 : 0;
 //       if (item.qty > maxQty) {
 //         validationErrors.push({
 //           name: item.name,
 //           maxQty: maxQty,
 //           requestedQty: item.qty
 //         });
+//         return;
 //       }
+
+//       batchAllocations[item.id] = {
+//         productId: item.id,
+//         name: item.name,
+//         qty: item.qty,
+//         price: getCurrentPrice(item) || 0,
+//         batchAllocations: [{
+//           batchNumber: selectedBatchInfo.batchNo,
+//           qty: item.qty,
+//           purchaseCost: selectedBatchInfo.purchasePrice || 0,
+//           batchIndex: selectedIndex
+//         }]
+//       };
 //     });
 
 //     if (validationErrors.length > 0) {
 //       const errorMsg = validationErrors.map(e => 
-//         `${e.name}: Requested ${e.requestedQty}, Available ${e.maxQty}`
+//         e.error 
+//           ? `${e.name}: ${e.error}`
+//           : `${e.name}: Requested ${e.requestedQty}, Available ${e.maxQty}`
 //       ).join('\n');
-//       alert(`Insufficient batch stock for:\n${errorMsg}`);
+//       alert(`Cannot place order:\n${errorMsg}`);
 //       return;
 //     }
 
@@ -2766,13 +2859,9 @@ export default OrderCartPage;
 //         price: getCurrentPrice(item) || 0,
 //         originalPrice: item[priceType] || 0,
 //         priceModified: item.priceModified?.[priceType] || false,
-//         batchInfo: {
-//           selectedBatchIndex: selectedBatchMap[item.id] ?? 0,
-//           batches: productBatches[item.id] || []
-//         }
+//         batchAllocations: batchAllocations[item.id]?.batchAllocations || []
 //       }));
 
-//       // Navigate to order success page
 //       navigate('/order-success', {
 //         state: {
 //           cartItems: orderedItems,
@@ -2780,23 +2869,42 @@ export default OrderCartPage;
 //           paymentMode: 'cash',
 //           date: new Date().toISOString(),
 //           priceType: priceType,
-//           batchSelections: selectedBatchMap,
+//           batchSelections: batchAllocations,
 //           showBatchSelector: true,
 //         }
 //       });
 
-//       // Update local stock state
+//       // ✅ COMPLETE RESET after order
 //       setCart(prev => {
 //         const updatedCart = prev.map(item => {
 //           const orderedItem = cartItems.find(ci => ci.id === item.id);
 //           if (orderedItem) {
-//             // Reduce overall stock
+//             const usedBatch = batchAllocations[item.id]?.batchAllocations[0];
+//             const availBatches = batchAvailability[item.id] || [];
+//             const batchStillAvailable = availBatches.some(
+//               b => b.batchNo === usedBatch?.batchNumber && b.quantityAvailable > 0
+//             );
+            
 //             const newStock = Math.max(0, item.currentStock - orderedItem.qty);
+            
 //             return {
 //               ...item,
 //               currentStock: newStock,
 //               qty: 0,
-//               addedToCartAt: null
+//               addedToCartAt: null,
+//               priceModified: {
+//                 retailerPrice: false,
+//                 distributorPrice: false,
+//                 walkinPrice: false,
+//                 mrp: false
+//               },
+//               customPrices: {
+//                 retailerPrice: item.retailerPrice,
+//                 distributorPrice: item.distributorPrice,
+//                 walkinPrice: item.walkinPrice,
+//                 mrp: item.mrp
+//               },
+//               _currentBatchForPrice: null
 //             };
 //           }
 //           return item;
@@ -2804,15 +2912,7 @@ export default OrderCartPage;
 //         return updatedCart;
 //       });
 
-//       // Update Redux store
-//       const stockUpdates = cartItems.map(item => ({
-//         id: item.id,
-//         quantity: item.qty
-//       }));
-      
-//       if (stockUpdates.length > 0) {
-//         dispatch(updateProductStock(stockUpdates));
-//       }
+//       setSelectedBatchMap({});
 
 //     } catch (error) {
 //       console.error('Error placing order:', error);
@@ -3021,3 +3121,1450 @@ export default OrderCartPage;
 // };
 
 // export default OrderCartPage;
+
+
+// //--------- working code before qty --------------
+// // // OrderCartPage.js - UPDATED with batch availability and stock reduction
+
+// // import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+// // import { useDispatch, useSelector } from 'react-redux';
+// // import { useNavigate } from 'react-router-dom';
+// // import { fetchProducts, updateProductStock } from '../../services/features/products/productSlice';
+// // import { fetchProductBatches, fetchBatchAvailability } from '../../services/features/purchase/purchaseSlice';
+// // import { useTheme } from '../../context/ThemeContext';
+// // import './OrderCartPage.css';
+
+// // import { 
+// //   Search, X, Package, ShoppingCart, Filter, Edit3, Save, XCircle, 
+// //   Check, ChevronDown, Tag, Calendar, ChevronUp
+// // } from 'lucide-react';
+// // import LoadingSpinner from '../../components/ui/LoadingSpinner';
+
+// // // ------------------ Helper functions ------------------
+// // const getNum = (obj, key, fallback = 0) => {
+// //   if (obj?.[key] !== undefined && obj?.[key] !== null) {
+// //     const val = Number(obj[key]);
+// //     if (!isNaN(val)) return val;
+// //   }
+// //   const spacedKey = key + ' ';
+// //   if (obj?.[spacedKey] !== undefined && obj?.[spacedKey] !== null) {
+// //     const val = Number(obj[spacedKey]);
+// //     if (!isNaN(val)) return val;
+// //   }
+// //   return fallback;
+// // };
+
+// // const getStr = (obj, key, fallback = '') => {
+// //   if (obj?.[key] !== undefined && obj?.[key] !== null) return String(obj[key]).trim();
+// //   const spacedKey = key + ' ';
+// //   if (obj?.[spacedKey] !== undefined && obj?.[spacedKey] !== null) return String(obj[spacedKey]).trim();
+// //   return fallback;
+// // };
+
+// // const getId = (obj) => {
+// //   if (!obj) return '';
+// //   if (typeof obj === 'string') return obj;
+// //   if (obj.$oid) return obj.$oid;
+// //   return obj._id || obj.id;
+// // };
+
+// // const formatDate = (dateStr) => {
+// //   if (!dateStr) return '—';
+// //   const d = new Date(dateStr);
+// //   if (isNaN(d.getTime())) return '—';
+// //   return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+// // };
+// // // -------------------------------------------------------
+
+// // // ─── Batch Price Selector Component (UPDATED with available quantity) ──────
+// // const BatchPriceSelector = ({ 
+// //   batches, 
+// //   selectedBatchIndex, 
+// //   onSelectBatch,
+// //   productName,
+// //   isDark,
+// //   availableBatches = []  // NEW: batches with available quantity
+// // }) => {
+// //   const [isOpen, setIsOpen] = useState(false);
+// //   const [showAll, setShowAll] = useState(false);
+// //   const dropdownRef = useRef(null);
+
+// //   useEffect(() => {
+// //     const handleClickOutside = (event) => {
+// //       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+// //         setIsOpen(false);
+// //       }
+// //     };
+// //     document.addEventListener('mousedown', handleClickOutside);
+// //     return () => document.removeEventListener('mousedown', handleClickOutside);
+// //   }, []);
+
+// //   // Combine historical batches with availability info
+// //   const batchesWithAvailability = useMemo(() => {
+// //     if (!batches || batches.length === 0) return [];
+    
+// //     // Create a map of batchNo -> available quantity
+// //     const availMap = {};
+// //     availableBatches.forEach(b => {
+// //       availMap[b.batchNo] = b.quantityAvailable || 0;
+// //     });
+    
+// //     // Add availability info to each batch
+// //     return batches.map(batch => ({
+// //       ...batch,
+// //       availableQty: availMap[batch.batchNo] || 0,
+// //       isAvailable: (availMap[batch.batchNo] || 0) > 0
+// //     }));
+// //   }, [batches, availableBatches]);
+
+// //   // Filter to only show available batches
+// //   const availableBatchesList = useMemo(() => {
+// //     return batchesWithAvailability.filter(b => b.isAvailable);
+// //   }, [batchesWithAvailability]);
+
+// //   if (batchesWithAvailability.length === 0) {
+// //     return (
+// //       <div className="batch-info" style={{ 
+// //         fontSize: '0.65rem', 
+// //         color: isDark ? '#666' : '#999',
+// //         marginTop: '2px',
+// //         fontStyle: 'italic'
+// //       }}>
+// //         No batch history
+// //       </div>
+// //     );
+// //   }
+
+// //   // Use available batches for selection, fallback to all if none available
+// //   const displayBatchesForSelection = availableBatchesList.length > 0 
+// //     ? availableBatchesList 
+// //     : batchesWithAvailability;
+
+// //   const validIndex = Math.min(selectedBatchIndex, displayBatchesForSelection.length - 1);
+// //   const selectedBatch = displayBatchesForSelection[validIndex] || displayBatchesForSelection[0];
+
+// //   const INITIAL_DISPLAY_COUNT = 3;
+// //   const displayBatches = showAll 
+// //     ? displayBatchesForSelection 
+// //     : displayBatchesForSelection.slice(0, INITIAL_DISPLAY_COUNT);
+// //   const hasMoreBatches = displayBatchesForSelection.length > INITIAL_DISPLAY_COUNT;
+
+// //   const toggleDropdown = (e) => {
+// //     e.stopPropagation();
+// //     setIsOpen(!isOpen);
+// //     if (isOpen) {
+// //       setShowAll(false);
+// //     }
+// //   };
+
+// //   return (
+// //     <div className="batch-selector-wrapper" ref={dropdownRef} style={{ position: 'relative', width: '100%' }}>
+// //       <div 
+// //         className="batch-selector-current"
+// //         onClick={toggleDropdown}
+// //         style={{
+// //           display: 'flex',
+// //           alignItems: 'center',
+// //           gap: '6px',
+// //           cursor: 'pointer',
+// //           padding: '4px 10px',
+// //           borderRadius: '6px',
+// //           background: isDark ? '#2a2a32' : '#f0f4f8',
+// //           border: `1px solid ${isDark ? '#3a3a42' : '#e2e8f0'}`,
+// //           transition: 'all 0.2s',
+// //           flexWrap: 'wrap',
+// //           width: '100%',
+// //           minHeight: '30px',
+// //           userSelect: 'none'
+// //         }}
+// //         onMouseEnter={(e) => {
+// //           e.currentTarget.style.borderColor = isDark ? '#5a5a62' : '#cbd5e1';
+// //         }}
+// //         onMouseLeave={(e) => {
+// //           e.currentTarget.style.borderColor = isDark ? '#3a3a42' : '#e2e8f0';
+// //         }}
+// //       >
+// //         <Tag size={12} style={{ color: isDark ? '#888' : '#666', flexShrink: 0 }} />
+// //         <span style={{ 
+// //           fontSize: '0.7rem', 
+// //           fontWeight: '600',
+// //           color: isDark ? '#ddd' : '#333',
+// //           fontFamily: 'monospace'
+// //         }}>
+// //           {selectedBatch.batchNo}
+// //         </span>
+// //         <span style={{ 
+// //           fontSize: '0.65rem', 
+// //           fontWeight: '700',
+// //           color: isDark ? '#81c784' : '#2e7d32'
+// //         }}>
+// //           ₹{Number(selectedBatch.purchasePrice || 0).toFixed(2)}
+// //         </span>
+// //         {/* NEW: Show available quantity */}
+// //         <span style={{ 
+// //           fontSize: '0.55rem', 
+// //           fontWeight: '600',
+// //           color: isDark ? '#ffb74d' : '#e65100',
+// //           background: isDark ? '#3a2a1a' : '#fff3e0',
+// //           padding: '1px 6px',
+// //           borderRadius: '8px'
+// //         }}>
+// //           Stock: {selectedBatch.availableQty || 0}
+// //         </span>
+// //         <span style={{ 
+// //           fontSize: '0.55rem', 
+// //           color: isDark ? '#666' : '#999',
+// //           display: 'flex',
+// //           alignItems: 'center',
+// //           gap: '2px'
+// //         }}>
+// //           <Calendar size={10} />
+// //           {formatDate(selectedBatch.invoiceDate)}
+// //         </span>
+// //         <span style={{ 
+// //           marginLeft: 'auto',
+// //           fontSize: '0.5rem',
+// //           color: isDark ? '#555' : '#bbb',
+// //           display: 'flex',
+// //           alignItems: 'center',
+// //           gap: '4px'
+// //         }}>
+// //           <span style={{ 
+// //             background: isDark ? '#1f1f28' : '#e8e8e8',
+// //             padding: '0 6px',
+// //             borderRadius: '8px',
+// //             fontSize: '0.5rem',
+// //             fontWeight: '600'
+// //           }}>
+// //             {displayBatchesForSelection.length} batch{displayBatchesForSelection.length > 1 ? 'es' : ''} available
+// //           </span>
+// //           <ChevronDown 
+// //             size={14} 
+// //             style={{ 
+// //               color: isDark ? '#666' : '#999',
+// //               transition: 'transform 0.2s',
+// //               transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+// //               flexShrink: 0
+// //             }} 
+// //           />
+// //         </span>
+// //       </div>
+
+// //       {isOpen && (
+// //         <div 
+// //           className="batch-selector-dropdown"
+// //           style={{
+// //             position: 'absolute',
+// //             top: 'calc(100% + 4px)',
+// //             left: 0,
+// //             right: 0,
+// //             zIndex: 9999,
+// //             background: isDark ? '#1c1d24' : '#ffffff',
+// //             border: `1px solid ${isDark ? '#3a3a42' : '#e2e8f0'}`,
+// //             borderRadius: '8px',
+// //             boxShadow: isDark 
+// //               ? '0 8px 32px rgba(0,0,0,0.5)' 
+// //               : '0 8px 32px rgba(0,0,0,0.12)',
+// //             maxHeight: '320px',
+// //             overflowY: 'auto',
+// //             padding: '4px 0',
+// //             minWidth: '220px'
+// //           }}
+// //         >
+// //           <div style={{
+// //             padding: '6px 12px',
+// //             fontSize: '0.6rem',
+// //             color: isDark ? '#666' : '#999',
+// //             borderBottom: `1px solid ${isDark ? '#2a2a32' : '#f0f0f0'}`,
+// //             background: isDark ? '#1a1a22' : '#fafafa',
+// //             display: 'flex',
+// //             justifyContent: 'space-between',
+// //             alignItems: 'center',
+// //             position: 'sticky',
+// //             top: 0,
+// //             zIndex: 1
+// //           }}>
+// //             <span>{displayBatchesForSelection.length} batch{displayBatchesForSelection.length > 1 ? 'es' : ''} available</span>
+// //             <span style={{ fontSize: '0.5rem', color: isDark ? '#555' : '#ccc' }}>
+// //               oldest first (FIFO)
+// //             </span>
+// //           </div>
+          
+// //           {displayBatches.map((batch, index) => {
+// //             const isSelected = index === validIndex;
+// //             const isNewest = index === 0;
+// //             const isOldest = index === displayBatchesForSelection.length - 1 && displayBatchesForSelection.length > 1;
+            
+// //             return (
+// //               <div
+// //                 key={index}
+// //                 className={`batch-option ${isSelected ? 'selected' : ''}`}
+// //                 onClick={(e) => {
+// //                   e.stopPropagation();
+// //                   if (batch.availableQty > 0) {
+// //                     onSelectBatch(index);
+// //                     setIsOpen(false);
+// //                     setShowAll(false);
+// //                   }
+// //                 }}
+// //                 style={{
+// //                   display: 'flex',
+// //                   alignItems: 'center',
+// //                   justifyContent: 'space-between',
+// //                   padding: '8px 12px',
+// //                   cursor: batch.availableQty > 0 ? 'pointer' : 'not-allowed',
+// //                   opacity: batch.availableQty > 0 ? 1 : 0.5,
+// //                   background: isSelected 
+// //                     ? (isDark ? '#2a2a3a' : '#e8f0fe')
+// //                     : 'transparent',
+// //                   transition: 'all 0.15s',
+// //                   borderBottom: index < displayBatches.length - 1 
+// //                     ? `1px solid ${isDark ? '#2a2a32' : '#f0f0f0'}`
+// //                     : 'none'
+// //                 }}
+// //                 onMouseEnter={(e) => {
+// //                   if (!isSelected && batch.availableQty > 0) {
+// //                     e.currentTarget.style.background = isDark ? '#2a2a32' : '#f5f5f5';
+// //                   }
+// //                 }}
+// //                 onMouseLeave={(e) => {
+// //                   if (!isSelected) {
+// //                     e.currentTarget.style.background = 'transparent';
+// //                   }
+// //                 }}
+// //               >
+// //                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
+// //                   <div style={{ 
+// //                     display: 'flex', 
+// //                     alignItems: 'center', 
+// //                     gap: '6px',
+// //                     fontWeight: isSelected ? '600' : '400',
+// //                     flexWrap: 'wrap'
+// //                   }}>
+// //                     <span style={{ 
+// //                       fontSize: '0.75rem',
+// //                       fontWeight: isSelected ? '600' : '500',
+// //                       color: isDark ? '#ddd' : '#333',
+// //                       fontFamily: 'monospace'
+// //                     }}>
+// //                       {batch.batchNo}
+// //                     </span>
+// //                     <span style={{ 
+// //                       fontSize: '0.7rem',
+// //                       fontWeight: '600',
+// //                       color: isDark ? '#81c784' : '#2e7d32'
+// //                     }}>
+// //                       ₹{Number(batch.purchasePrice || 0).toFixed(2)}
+// //                     </span>
+// //                     {/* NEW: Show available quantity in dropdown */}
+// //                     <span style={{ 
+// //                       fontSize: '0.6rem',
+// //                       fontWeight: '600',
+// //                       color: batch.availableQty > 0 ? (isDark ? '#ffb74d' : '#e65100') : (isDark ? '#666' : '#999'),
+// //                       background: batch.availableQty > 0 ? (isDark ? '#3a2a1a' : '#fff3e0') : 'transparent',
+// //                       padding: '1px 6px',
+// //                       borderRadius: '8px'
+// //                     }}>
+// //                       Qty: {batch.availableQty || 0}
+// //                     </span>
+// //                     {isNewest && (
+// //                       <span style={{
+// //                         fontSize: '0.5rem',
+// //                         fontWeight: '700',
+// //                         background: isDark ? '#1a3a2a' : '#e8f5e9',
+// //                         color: isDark ? '#81c784' : '#2e7d32',
+// //                         padding: '1px 6px',
+// //                         borderRadius: '8px',
+// //                         textTransform: 'uppercase',
+// //                         letterSpacing: '0.3px'
+// //                       }}>
+// //                         Newest
+// //                       </span>
+// //                     )}
+// //                     {isOldest && displayBatchesForSelection.length > 1 && (
+// //                       <span style={{
+// //                         fontSize: '0.5rem',
+// //                         fontWeight: '700',
+// //                         background: isDark ? '#2a1a1a' : '#fde8e8',
+// //                         color: isDark ? '#e88181' : '#b91c1c',
+// //                         padding: '1px 6px',
+// //                         borderRadius: '8px',
+// //                         textTransform: 'uppercase',
+// //                         letterSpacing: '0.3px'
+// //                       }}>
+// //                         Oldest (FIFO)
+// //                       </span>
+// //                     )}
+// //                     {batch.availableQty === 0 && (
+// //                       <span style={{
+// //                         fontSize: '0.5rem',
+// //                         fontWeight: '700',
+// //                         background: isDark ? '#3a1a1a' : '#fde8e8',
+// //                         color: isDark ? '#e88181' : '#b91c1c',
+// //                         padding: '1px 6px',
+// //                         borderRadius: '8px',
+// //                         textTransform: 'uppercase'
+// //                       }}>
+// //                         OUT OF STOCK
+// //                       </span>
+// //                     )}
+// //                   </div>
+// //                   <div style={{ 
+// //                     display: 'flex', 
+// //                     alignItems: 'center', 
+// //                     gap: '8px',
+// //                     fontSize: '0.6rem',
+// //                     color: isDark ? '#666' : '#999',
+// //                     flexWrap: 'wrap'
+// //                   }}>
+// //                     <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+// //                       <Calendar size={10} />
+// //                       {formatDate(batch.invoiceDate)}
+// //                     </span>
+// //                     {batch.invoiceNumber && (
+// //                       <span style={{ fontSize: '0.5rem', color: isDark ? '#444' : '#ccc' }}>
+// //                         {batch.invoiceNumber}
+// //                       </span>
+// //                     )}
+// //                   </div>
+// //                 </div>
+// //                 {isSelected && batch.availableQty > 0 && (
+// //                   <Check size={16} style={{ 
+// //                     color: isDark ? '#81c784' : '#2e7d32',
+// //                     flexShrink: 0,
+// //                     marginLeft: '8px'
+// //                   }} />
+// //                 )}
+// //               </div>
+// //             );
+// //           })}
+
+// //           {hasMoreBatches && (
+// //             <div
+// //               onClick={(e) => {
+// //                 e.stopPropagation();
+// //                 setShowAll(!showAll);
+// //               }}
+// //               style={{
+// //                 padding: '8px 12px',
+// //                 textAlign: 'center',
+// //                 cursor: 'pointer',
+// //                 borderTop: `1px solid ${isDark ? '#2a2a32' : '#f0f0f0'}`,
+// //                 background: isDark ? '#1a1a22' : '#fafafa',
+// //                 display: 'flex',
+// //                 alignItems: 'center',
+// //                 justifyContent: 'center',
+// //                 gap: '6px',
+// //                 color: isDark ? '#81c784' : '#2e7d32',
+// //                 fontSize: '0.65rem',
+// //                 fontWeight: '600',
+// //                 transition: 'all 0.15s'
+// //               }}
+// //               onMouseEnter={(e) => {
+// //                 e.currentTarget.style.background = isDark ? '#2a2a32' : '#f0f0f0';
+// //               }}
+// //               onMouseLeave={(e) => {
+// //                 e.currentTarget.style.background = isDark ? '#1a1a22' : '#fafafa';
+// //               }}
+// //             >
+// //               {showAll ? (
+// //                 <>
+// //                   <ChevronUp size={14} /> Show Less
+// //                 </>
+// //               ) : (
+// //                 <>
+// //                   <ChevronDown size={14} /> Show All ({displayBatchesForSelection.length} batches)
+// //                 </>
+// //               )}
+// //             </div>
+// //           )}
+// //         </div>
+// //       )}
+// //     </div>
+// //   );
+// // };
+
+// // // ─── Price Type Selector ──────────────────────────────────────
+// // const PriceTypeSelector = ({ priceType, onSelectPriceType }) => {
+// //   const options = [
+// //     { label: 'Retailer', value: 'retailerPrice' },
+// //     { label: 'Distributor', value: 'distributorPrice' },
+// //     { label: 'Walk‑in', value: 'walkinPrice' },
+// //     { label: 'MRP', value: 'mrp' },
+// //   ];
+
+// //   return (
+// //     <div className="price-selector-row">
+// //       {options.map(opt => (
+// //         <button
+// //           key={opt.value}
+// //           className={`price-option ${priceType === opt.value ? 'active' : ''}`}
+// //           onClick={() => onSelectPriceType(opt.value)}
+// //         >
+// //           {opt.label}
+// //         </button>
+// //       ))}
+// //     </div>
+// //   );
+// // };
+
+// // // ─── Product Row ──────────────────────────────────────────────
+// // const ProductRow = ({ 
+// //   item, 
+// //   onUpdateQty, 
+// //   onQtyInputChange, 
+// //   price, 
+// //   onPriceChange,
+// //   isEditingPrice,
+// //   onTogglePriceEdit,
+// //   onSavePriceEdit,
+// //   batches,
+// //   selectedBatchIndex,
+// //   onSelectBatch,
+// //   isDark,
+// //   availableBatches = []  // NEW
+// // }) => {
+// //   const stock = item.currentStock || 0;
+// //   const [localQty, setLocalQty] = useState(item.qty.toString());
+// //   const [isEditing, setIsEditing] = useState(false);
+// //   const [localPrice, setLocalPrice] = useState(price.toString());
+// //   const inputRef = useRef(null);
+
+// //   const selectedBatch = batches && batches.length > 0 && selectedBatchIndex !== undefined 
+// //     ? batches[Math.min(selectedBatchIndex, batches.length - 1)] 
+// //     : null;
+
+// //   useEffect(() => {
+// //     if (!isEditing) {
+// //       setLocalQty(item.qty.toString());
+// //     }
+// //   }, [item.qty, isEditing]);
+
+// //   useEffect(() => {
+// //     if (!isEditingPrice) {
+// //       setLocalPrice(price.toString());
+// //     }
+// //   }, [price, isEditingPrice]);
+
+// //   useEffect(() => {
+// //     if (selectedBatch && selectedBatch.purchasePrice > 0) {
+// //       setLocalPrice(price.toString());
+// //     }
+// //   }, [selectedBatch, price]);
+
+// //   const handleInputChange = (e) => {
+// //     const value = e.target.value;
+// //     setLocalQty(value);
+    
+// //     if (value === '') {
+// //       onQtyInputChange(item.id, 0);
+// //       return;
+// //     }
+    
+// //     const numValue = parseInt(value, 10);
+// //     if (!isNaN(numValue)) {
+// //       const clampedValue = Math.max(0, Math.min(numValue, stock));
+// //       onQtyInputChange(item.id, clampedValue);
+// //     }
+// //   };
+
+// //   const handleBlur = () => {
+// //     setIsEditing(false);
+// //     let numValue = parseInt(localQty, 10);
+// //     if (isNaN(numValue)) numValue = 0;
+// //     const clampedValue = Math.max(0, Math.min(numValue, stock));
+// //     onQtyInputChange(item.id, clampedValue);
+// //     setLocalQty(clampedValue.toString());
+// //   };
+
+// //   const handleFocus = () => {
+// //     setIsEditing(true);
+// //   };
+
+// //   const handleKeyDown = (e) => {
+// //     if (e.key === 'Enter') {
+// //       inputRef.current?.blur();
+// //     }
+// //   };
+
+// //   const handlePriceInputChange = (e) => {
+// //     let value = e.target.value;
+// //     value = value.replace(/[^0-9.]/g, '');
+// //     const parts = value.split('.');
+// //     if (parts.length > 2) {
+// //       value = parts[0] + '.' + parts.slice(1).join('');
+// //     }
+// //     setLocalPrice(value);
+// //   };
+
+// //   const handlePriceBlur = () => {
+// //     let numValue = parseFloat(localPrice);
+// //     if (isNaN(numValue) || numValue < 0) numValue = 0;
+// //     setLocalPrice(numValue.toString());
+// //   };
+
+// //   const handlePriceKeyDown = (e) => {
+// //     if (e.key === 'Enter') {
+// //       const numValue = parseFloat(localPrice);
+// //       if (!isNaN(numValue) && numValue >= 0) {
+// //         onSavePriceEdit(item.id, numValue);
+// //       }
+// //     }
+// //   };
+
+// //   const handleSavePrice = () => {
+// //     const numValue = parseFloat(localPrice);
+// //     if (!isNaN(numValue) && numValue >= 0) {
+// //       onSavePriceEdit(item.id, numValue);
+// //     } else {
+// //       setLocalPrice(price.toString());
+// //       onTogglePriceEdit(item.id);
+// //     }
+// //   };
+
+// //   const handleCancelPriceEdit = () => {
+// //     setLocalPrice(price.toString());
+// //     onTogglePriceEdit(item.id);
+// //   };
+
+// //   // Get max available quantity from selected batch
+// //   const maxBatchQty = useMemo(() => {
+// //     if (!availableBatches || availableBatches.length === 0) return stock;
+// //     const batchIndex = Math.min(selectedBatchIndex, availableBatches.length - 1);
+// //     const batch = availableBatches[batchIndex];
+// //     return batch ? batch.quantityAvailable || 0 : 0;
+// //   }, [availableBatches, selectedBatchIndex]);
+
+// //   // Show warning if selected quantity exceeds available batch stock
+// //   const exceedsBatchStock = item.qty > maxBatchQty && maxBatchQty > 0;
+
+// //   return (
+// //     <div className="product-card">
+// //       <div className="product-row">
+// //         <div className="product-image-placeholder">
+// //           {item.image ? (
+// //             <img src={item.image} alt={item.name} className="product-image" />
+// //           ) : (
+// //             <div className="no-image">No Image</div>
+// //           )}
+// //         </div>
+
+// //         <div className="product-info">
+// //           <div className="product-name">{item.name}</div>
+// //           <div className="product-meta">SKU: {item.sku}</div>
+// //           <div className="product-meta">Stock: {stock} units</div>
+          
+// //           <div className="batch-selector-container">
+// //             <BatchPriceSelector 
+// //               batches={batches}
+// //               selectedBatchIndex={selectedBatchIndex}
+// //               onSelectBatch={(index) => onSelectBatch(item.id, index)}
+// //               productName={item.name}
+// //               isDark={isDark}
+// //               availableBatches={availableBatches}
+// //             />
+// //           </div>
+          
+// //           {/* NEW: Show batch stock warning */}
+// //           {exceedsBatchStock && (
+// //             <div style={{ 
+// //               fontSize: '0.6rem', 
+// //               color: '#d32f2f',
+// //               marginTop: '2px'
+// //             }}>
+// //               ⚠️ Quantity exceeds available stock for this batch ({maxBatchQty} units)
+// //             </div>
+// //           )}
+          
+// //           <div className="product-price-row">
+// //             {isEditingPrice ? (
+// //               <div className="price-edit-container">
+// //                 <span className="price-edit-label">₹</span>
+// //                 <input
+// //                   type="text"
+// //                   className="price-edit-input"
+// //                   value={localPrice}
+// //                   onChange={handlePriceInputChange}
+// //                   onBlur={handlePriceBlur}
+// //                   onKeyDown={handlePriceKeyDown}
+// //                   autoFocus
+// //                   placeholder="Enter price"
+// //                 />
+// //                 <button 
+// //                   className="price-edit-save-btn" 
+// //                   onClick={handleSavePrice}
+// //                   title="Save price"
+// //                 >
+// //                   <Save size={14} />
+// //                 </button>
+// //                 <button 
+// //                   className="price-edit-cancel-btn" 
+// //                   onClick={handleCancelPriceEdit}
+// //                   title="Cancel"
+// //                 >
+// //                   <XCircle size={14} />
+// //                 </button>
+// //               </div>
+// //             ) : (
+// //               <>
+// //                 <span className="product-price">₹{Number(price).toLocaleString('en-IN')}</span>
+// //                 <button 
+// //                   className="price-edit-toggle-btn"
+// //                   onClick={() => onTogglePriceEdit(item.id)}
+// //                   title="Edit price"
+// //                 >
+// //                   <Edit3 size={14} />
+// //                 </button>
+// //               </>
+// //             )}
+// //           </div>
+// //         </div>
+
+// //         <div className="stepper">
+// //           <button
+// //             className="qty-btn"
+// //             onClick={() => onUpdateQty(item.id, 'dec')}
+// //             disabled={item.qty === 0}
+// //           >
+// //             −
+// //           </button>
+// //           <input
+// //             ref={inputRef}
+// //             type="text"
+// //             inputMode="numeric"
+// //             pattern="[0-9]*"
+// //             className="qty-input"
+// //             value={localQty}
+// //             onChange={handleInputChange}
+// //             onFocus={handleFocus}
+// //             onBlur={handleBlur}
+// //             onKeyDown={handleKeyDown}
+// //           />
+// //           <button
+// //             className="qty-btn"
+// //             onClick={() => onUpdateQty(item.id, 'inc')}
+// //             disabled={item.qty >= stock || (maxBatchQty > 0 && item.qty >= maxBatchQty)}
+// //           >
+// //             +
+// //           </button>
+// //         </div>
+// //       </div>
+// //     </div>
+// //   );
+// // };
+
+// // // ─── Main Component ────────────────────────────────────────────
+// // const OrderCartPage = () => {
+// //   const dispatch = useDispatch();
+// //   const navigate = useNavigate();
+// //   const { theme } = useTheme();
+// //   const isDark = theme === 'dark';
+
+// //   const products = useSelector(state => state.products.list);
+// //   const { productBatches, productBatchesLoading } = useSelector(state => state.purchases);
+  
+// //   const [isLoading, setIsLoading] = useState(true);
+// //   const [isOrderPlacing, setIsOrderPlacing] = useState(false);
+// //   const [searchQuery, setSearchQuery] = useState('');
+// //   const [selectedCategory, setSelectedCategory] = useState('');
+// //   const [cart, setCart] = useState([]);
+// //   const [priceType, setPriceType] = useState('retailerPrice');
+// //   const [editingPriceId, setEditingPriceId] = useState(null);
+// //   const [selectedBatchMap, setSelectedBatchMap] = useState({});
+// //   const [batchAvailability, setBatchAvailability] = useState({}); // NEW: Store available batch quantities
+// //   const hasInitialized = useRef(false);
+// //   const batchFetched = useRef(false);
+
+// //   // Extract unique categories from products
+// //   const categories = useMemo(() => {
+// //     if (!products.length) return [];
+// //     const cats = new Set();
+// //     products.forEach(product => {
+// //       const category = getStr(product, 'category');
+// //       if (category) cats.add(category);
+// //     });
+// //     return Array.from(cats).sort();
+// //   }, [products]);
+
+// //   // Load products on mount
+// //   useEffect(() => {
+// //     const loadData = async () => {
+// //       try {
+// //         await dispatch(fetchProducts());
+// //       } catch (error) {
+// //         console.error('Failed to load data:', error);
+// //       } finally {
+// //         setIsLoading(false);
+// //       }
+// //     };
+// //     loadData();
+// //   }, [dispatch]);
+
+// //   // Compute available stock directly from product moq
+// //   const stockDataMap = useMemo(() => {
+// //     if (!products.length) return new Map();
+
+// //     const stockMap = new Map();
+// //     products.forEach(product => {
+// //       const id = getId(product._id);
+// //       const moq = getNum(product, 'moq', 0);
+// //       const category = getStr(product, 'category');
+
+// //       stockMap.set(id, {
+// //         id,
+// //         name: getStr(product, 'name'),
+// //         sku: getStr(product, 'sku'),
+// //         category: category,
+// //         retailerPrice: getNum(product, 'retailerPrice'),
+// //         distributorPrice: getNum(product, 'distributorPrice'),
+// //         walkinPrice: getNum(product, 'walkinPrice'),
+// //         mrp: getNum(product, 'mrp'),
+// //         image: product.image ?? null,
+// //         availableStock: moq,
+// //       });
+// //     });
+
+// //     return stockMap;
+// //   }, [products]);
+
+// //   // Build cart from stockDataMap
+// //   useEffect(() => {
+// //     if (!stockDataMap.size) return;
+// //     if (hasInitialized.current) return;
+
+// //     const newCart = Array.from(stockDataMap.values()).map(item => ({
+// //       id: item.id,
+// //       name: item.name,
+// //       sku: item.sku,
+// //       category: item.category,
+// //       retailerPrice: item.retailerPrice,
+// //       distributorPrice: item.distributorPrice,
+// //       walkinPrice: item.walkinPrice,
+// //       mrp: item.mrp,
+// //       image: item.image,
+// //       currentStock: item.availableStock,
+// //       qty: 0,
+// //       customPrices: {
+// //         retailerPrice: item.retailerPrice,
+// //         distributorPrice: item.distributorPrice,
+// //         walkinPrice: item.walkinPrice,
+// //         mrp: item.mrp,
+// //       },
+// //       priceModified: {
+// //         retailerPrice: false,
+// //         distributorPrice: false,
+// //         walkinPrice: false,
+// //         mrp: false,
+// //       },
+// //       addedToCartAt: null,
+// //       selectedBatchIndex: 0,
+// //     }));
+// //     setCart(newCart);
+// //     hasInitialized.current = true;
+// //   }, [stockDataMap]);
+
+// //   // Fetch batch information and availability for all products
+// //   useEffect(() => {
+// //     if (!cart.length || batchFetched.current) return;
+    
+// //     const productIds = cart.map(item => item.id).filter(id => id);
+// //     if (productIds.length > 0) {
+// //       // Fetch batch history
+// //       dispatch(fetchProductBatches(productIds));
+      
+// //       // NEW: Fetch batch availability for each product
+// //       productIds.forEach(productId => {
+// //         dispatch(fetchBatchAvailability(productId)).then((result) => {
+// //           if (result.payload) {
+// //             setBatchAvailability(prev => ({
+// //               ...prev,
+// //               [result.payload.productId]: result.payload.batches
+// //             }));
+// //           }
+// //         });
+// //       });
+      
+// //       batchFetched.current = true;
+// //     }
+// //   }, [cart, dispatch]);
+
+// //   // When batches load, set default selection to first available batch
+// //   useEffect(() => {
+// //     if (Object.keys(productBatches).length > 0) {
+// //       const newSelectedBatchMap = { ...selectedBatchMap };
+// //       let hasChanges = false;
+      
+// //       Object.keys(productBatches).forEach(productId => {
+// //         const batches = productBatches[productId] || [];
+// //         const available = batchAvailability[productId] || [];
+        
+// //         if (batches.length > 0 && selectedBatchMap[productId] === undefined) {
+// //           // Find first batch that has available stock
+// //           let validIndex = 0;
+// //           if (available.length > 0) {
+// //             // Find the matching batch in the history list
+// //             const firstAvailableBatch = available[0];
+// //             const historyIndex = batches.findIndex(b => b.batchNo === firstAvailableBatch.batchNo);
+// //             validIndex = historyIndex >= 0 ? historyIndex : 0;
+// //           }
+// //           newSelectedBatchMap[productId] = validIndex;
+// //           hasChanges = true;
+// //         }
+// //       });
+      
+// //       if (hasChanges) {
+// //         setSelectedBatchMap(newSelectedBatchMap);
+// //       }
+// //     }
+// //   }, [productBatches, batchAvailability]);
+
+// //   const updateQty = useCallback((id, type) => {
+// //     setCart(prev => {
+// //       const index = prev.findIndex(item => item.id === id);
+// //       if (index === -1) return prev;
+// //       const oldItem = prev[index];
+// //       let newQty = oldItem.qty;
+// //       if (type === 'inc') newQty++;
+// //       if (type === 'dec') newQty--;
+      
+// //       // NEW: Check against batch availability
+// //       const availBatches = batchAvailability[id] || [];
+// //       const batchIndex = selectedBatchMap[id] ?? 0;
+// //       const selectedBatch = availBatches[batchIndex];
+// //       const maxBatchQty = selectedBatch ? selectedBatch.quantityAvailable || 0 : oldItem.currentStock;
+      
+// //       newQty = Math.max(0, Math.min(newQty, oldItem.currentStock, maxBatchQty));
+// //       if (newQty === oldItem.qty) return prev;
+// //       const newItem = { ...oldItem, qty: newQty };
+      
+// //       if (oldItem.qty === 0 && newQty > 0) {
+// //         newItem.addedToCartAt = Date.now();
+// //       }
+// //       if (oldItem.qty > 0 && newQty === 0) {
+// //         newItem.addedToCartAt = null;
+// //       }
+      
+// //       const newCart = [...prev];
+// //       newCart[index] = newItem;
+// //       return newCart;
+// //     });
+// //   }, [batchAvailability, selectedBatchMap]);
+
+// //   const updateQtyDirect = useCallback((id, newQty) => {
+// //     setCart(prev => {
+// //       const index = prev.findIndex(item => item.id === id);
+// //       if (index === -1) return prev;
+// //       const oldItem = prev[index];
+      
+// //       // NEW: Check against batch availability
+// //       const availBatches = batchAvailability[id] || [];
+// //       const batchIndex = selectedBatchMap[id] ?? 0;
+// //       const selectedBatch = availBatches[batchIndex];
+// //       const maxBatchQty = selectedBatch ? selectedBatch.quantityAvailable || 0 : oldItem.currentStock;
+      
+// //       const clampedQty = Math.max(0, Math.min(newQty, oldItem.currentStock, maxBatchQty));
+// //       if (clampedQty === oldItem.qty) return prev;
+// //       const newItem = { ...oldItem, qty: clampedQty };
+      
+// //       if (oldItem.qty === 0 && clampedQty > 0) {
+// //         newItem.addedToCartAt = Date.now();
+// //       }
+// //       if (oldItem.qty > 0 && clampedQty === 0) {
+// //         newItem.addedToCartAt = null;
+// //       }
+      
+// //       const newCart = [...prev];
+// //       newCart[index] = newItem;
+// //       return newCart;
+// //     });
+// //   }, [batchAvailability, selectedBatchMap]);
+
+// //   const getPriceFromBatch = useCallback((batch, priceTypeKey) => {
+// //     if (!batch) return 0;
+    
+// //     switch(priceTypeKey) {
+// //       case 'retailerPrice':
+// //         return batch.retailerPrice || batch.purchasePrice || 0;
+// //       case 'distributorPrice':
+// //         return batch.distributorPrice || batch.purchasePrice || 0;
+// //       case 'walkinPrice':
+// //         return batch.walkinPrice || batch.purchasePrice || 0;
+// //       case 'mrp':
+// //         return batch.mrp || batch.purchasePrice || 0;
+// //       default:
+// //         return batch.purchasePrice || 0;
+// //     }
+// //   }, []);
+
+// //   const handleSelectBatch = useCallback((productId, batchIndex) => {
+// //     // Update selected batch map
+// //     setSelectedBatchMap(prev => ({
+// //       ...prev,
+// //       [productId]: batchIndex
+// //     }));
+
+// //     // Get the selected batch from history
+// //     const batches = productBatches[productId] || [];
+// //     const selectedBatch = batches[batchIndex];
+    
+// //     if (selectedBatch && selectedBatch.purchasePrice > 0) {
+// //       const priceToUse = getPriceFromBatch(selectedBatch, priceType);
+      
+// //       // Update the cart item price
+// //       setCart(prev => {
+// //         const index = prev.findIndex(item => item.id === productId);
+// //         if (index === -1) return prev;
+// //         const item = prev[index];
+        
+// //         // NEW: Reset quantity if it exceeds batch availability
+// //         const availBatches = batchAvailability[productId] || [];
+// //         const availBatch = availBatches.find(b => b.batchNo === selectedBatch.batchNo);
+// //         const maxQty = availBatch ? availBatch.quantityAvailable || 0 : item.currentStock;
+// //         const newQty = Math.min(item.qty, maxQty);
+        
+// //         const updatedItem = {
+// //           ...item,
+// //           qty: newQty,
+// //           customPrices: {
+// //             ...item.customPrices,
+// //             [priceType]: priceToUse
+// //           },
+// //           priceModified: {
+// //             ...item.priceModified,
+// //             [priceType]: true
+// //           },
+// //           selectedBatchIndex: batchIndex
+// //         };
+        
+// //         const newCart = [...prev];
+// //         newCart[index] = updatedItem;
+// //         return newCart;
+// //       });
+// //     }
+// //   }, [productBatches, priceType, getPriceFromBatch, batchAvailability]);
+
+// //   const togglePriceEdit = useCallback((id) => {
+// //     setEditingPriceId(prev => prev === id ? null : id);
+// //   }, []);
+
+// //   const saveCustomPrice = useCallback((id, newPrice) => {
+// //     setCart(prev => {
+// //       const index = prev.findIndex(item => item.id === id);
+// //       if (index === -1) return prev;
+      
+// //       const item = prev[index];
+// //       const updatedItem = {
+// //         ...item,
+// //         customPrices: {
+// //           ...item.customPrices,
+// //           [priceType]: newPrice
+// //         },
+// //         priceModified: {
+// //           ...item.priceModified,
+// //           [priceType]: true
+// //         }
+// //       };
+      
+// //       const newCart = [...prev];
+// //       newCart[index] = updatedItem;
+// //       return newCart;
+// //     });
+// //     setEditingPriceId(null);
+// //   }, [priceType]);
+
+// //   const getCurrentPrice = useCallback((item) => {
+// //     // First check if custom price exists (user manually edited)
+// //     if (item.customPrices && item.customPrices[priceType] !== undefined && item.priceModified?.[priceType]) {
+// //       return item.customPrices[priceType];
+// //     }
+    
+// //     // Then check if there's a selected batch price
+// //     const batches = productBatches[item.id] || [];
+// //     const batchIndex = selectedBatchMap[item.id] ?? 0;
+// //     const selectedBatch = batches[batchIndex];
+    
+// //     if (selectedBatch && selectedBatch.purchasePrice > 0) {
+// //       return getPriceFromBatch(selectedBatch, priceType);
+// //     }
+    
+// //     // Fallback to default price
+// //     return item[priceType] || 0;
+// //   }, [priceType, productBatches, selectedBatchMap, getPriceFromBatch]);
+
+// //   const handlePriceTypeChange = useCallback((newPriceType) => {
+// //     setPriceType(newPriceType);
+    
+// //     // Update all cart items to use the correct price from their selected batch
+// //     setCart(prev => {
+// //       const updatedCart = prev.map(item => {
+// //         const batches = productBatches[item.id] || [];
+// //         const batchIndex = selectedBatchMap[item.id] ?? 0;
+// //         const selectedBatch = batches[batchIndex];
+        
+// //         if (selectedBatch && selectedBatch.purchasePrice > 0) {
+// //           const priceToUse = getPriceFromBatch(selectedBatch, newPriceType);
+          
+// //           return {
+// //             ...item,
+// //             customPrices: {
+// //               ...item.customPrices,
+// //               [newPriceType]: priceToUse
+// //             },
+// //             priceModified: {
+// //               ...item.priceModified,
+// //               [newPriceType]: true
+// //             }
+// //           };
+// //         }
+// //         return item;
+// //       });
+// //       return updatedCart;
+// //     });
+// //   }, [productBatches, selectedBatchMap, getPriceFromBatch]);
+
+// //   // Filter and sort
+// //   const filteredAndSortedCart = useMemo(() => {
+// //     const query = searchQuery.trim().toLowerCase();
+    
+// //     let filtered = cart;
+    
+// //     if (query) {
+// //       filtered = filtered.filter(item =>
+// //         item.name.toLowerCase().includes(query) ||
+// //         item.sku.toLowerCase().includes(query)
+// //       );
+// //     }
+    
+// //     if (selectedCategory) {
+// //       filtered = filtered.filter(item => item.category === selectedCategory);
+// //     }
+    
+// //     return [...filtered].sort((a, b) => {
+// //       if (a.qty > 0 && b.qty > 0) {
+// //         const timeA = a.addedToCartAt || 0;
+// //         const timeB = b.addedToCartAt || 0;
+// //         return timeA - timeB;
+// //       }
+// //       if (a.qty > 0 && b.qty === 0) return -1;
+// //       if (a.qty === 0 && b.qty > 0) return 1;
+// //       return a.name.localeCompare(b.name);
+// //     });
+// //   }, [cart, searchQuery, selectedCategory]);
+
+// //   const cartItems = useMemo(() => {
+// //     const selected = cart.filter(item => item.qty > 0);
+// //     return [...selected].sort((a, b) => {
+// //       const timeA = a.addedToCartAt || 0;
+// //       const timeB = b.addedToCartAt || 0;
+// //       return timeA - timeB;
+// //     });
+// //   }, [cart]);
+
+// //   const totalItems = useMemo(() =>
+// //     cartItems.reduce((sum, item) => sum + item.qty, 0),
+// //     [cartItems]
+// //   );
+
+// //   const totalAmount = useMemo(() =>
+// //     cartItems.reduce((sum, item) => sum + (getCurrentPrice(item) || 0) * item.qty, 0),
+// //     [cartItems, getCurrentPrice]
+// //   );
+
+// //   // ─── UPDATED: Place Order with Batch Stock Reduction ──────────────────────────
+
+// //   const handlePlaceOrder = async () => {
+// //     if (cartItems.length === 0) {
+// //       alert('Please add at least one item to your order.');
+// //       return;
+// //     }
+
+// //     // Validate that quantities don't exceed batch availability
+// //     const validationErrors = [];
+// //     cartItems.forEach(item => {
+// //       const availBatches = batchAvailability[item.id] || [];
+// //       const batchIndex = selectedBatchMap[item.id] ?? 0;
+// //       const selectedBatch = availBatches[batchIndex];
+// //       const maxQty = selectedBatch ? selectedBatch.quantityAvailable || 0 : 0;
+      
+// //       if (item.qty > maxQty) {
+// //         validationErrors.push({
+// //           name: item.name,
+// //           maxQty: maxQty,
+// //           requestedQty: item.qty
+// //         });
+// //       }
+// //     });
+
+// //     if (validationErrors.length > 0) {
+// //       const errorMsg = validationErrors.map(e => 
+// //         `${e.name}: Requested ${e.requestedQty}, Available ${e.maxQty}`
+// //       ).join('\n');
+// //       alert(`Insufficient batch stock for:\n${errorMsg}`);
+// //       return;
+// //     }
+
+// //     setIsOrderPlacing(true);
+
+// //     try {
+// //       const orderedItems = cartItems.map(item => ({
+// //         id: item.id,
+// //         name: item.name,
+// //         qty: item.qty,
+// //         price: getCurrentPrice(item) || 0,
+// //         originalPrice: item[priceType] || 0,
+// //         priceModified: item.priceModified?.[priceType] || false,
+// //         batchInfo: {
+// //           selectedBatchIndex: selectedBatchMap[item.id] ?? 0,
+// //           batches: productBatches[item.id] || []
+// //         }
+// //       }));
+
+// //       // Navigate to order success page
+// //       navigate('/order-success', {
+// //         state: {
+// //           cartItems: orderedItems,
+// //           grandTotal: totalAmount,
+// //           paymentMode: 'cash',
+// //           date: new Date().toISOString(),
+// //           priceType: priceType,
+// //           batchSelections: selectedBatchMap,
+// //           showBatchSelector: true,
+// //         }
+// //       });
+
+// //       // Update local stock state
+// //       setCart(prev => {
+// //         const updatedCart = prev.map(item => {
+// //           const orderedItem = cartItems.find(ci => ci.id === item.id);
+// //           if (orderedItem) {
+// //             // Reduce overall stock
+// //             const newStock = Math.max(0, item.currentStock - orderedItem.qty);
+// //             return {
+// //               ...item,
+// //               currentStock: newStock,
+// //               qty: 0,
+// //               addedToCartAt: null
+// //             };
+// //           }
+// //           return item;
+// //         });
+// //         return updatedCart;
+// //       });
+
+// //       // Update Redux store
+// //       const stockUpdates = cartItems.map(item => ({
+// //         id: item.id,
+// //         quantity: item.qty
+// //       }));
+      
+// //       if (stockUpdates.length > 0) {
+// //         dispatch(updateProductStock(stockUpdates));
+// //       }
+
+// //     } catch (error) {
+// //       console.error('Error placing order:', error);
+// //       alert('Failed to place order. Please try again.');
+// //     } finally {
+// //       setIsOrderPlacing(false);
+// //     }
+// //   };
+
+// //   const clearCategoryFilter = () => {
+// //     setSelectedCategory('');
+// //   };
+
+// //   if (isLoading) {
+// //     return (
+// //       <div className={`order-cart-page ${isDark ? 'dark' : ''}`}>
+// //         <LoadingSpinner message="Loading products..." />
+// //       </div>
+// //     );
+// //   }
+
+// //   return (
+// //     <div className={`order-cart-page ${isDark ? 'dark' : ''}`}>
+// //       <div className="cart-main">
+// //         <div className="cart-header">
+// //           <h1>
+// //             My Cart
+// //             <span className="cart-count-badge">({totalItems})</span>
+// //           </h1>
+// //         </div>
+
+// //         <div className="search-section">
+// //           <div className="search-wrapper">
+// //             <Search size={18} className="search-icon" />
+// //             <input
+// //               type="text"
+// //               placeholder="Search by name or SKU…"
+// //               value={searchQuery}
+// //               onChange={(e) => setSearchQuery(e.target.value)}
+// //               className="search-input"
+// //             />
+// //             {searchQuery && (
+// //               <button onClick={() => setSearchQuery('')} className="search-clear">
+// //                 <X size={16} />
+// //               </button>
+// //             )}
+// //           </div>
+          
+// //           {categories.length > 0 && (
+// //             <div className="category-filter-section">
+// //               <div className="filter-wrapper">
+// //                 <Filter size={16} className="filter-icon" />
+// //                 <select
+// //                   value={selectedCategory}
+// //                   onChange={(e) => setSelectedCategory(e.target.value)}
+// //                   className="category-select"
+// //                 >
+// //                   <option value="">All Categories</option>
+// //                   {categories.map(cat => (
+// //                     <option key={cat} value={cat}>{cat}</option>
+// //                   ))}
+// //                 </select>
+// //                 {selectedCategory && (
+// //                   <button onClick={clearCategoryFilter} className="filter-clear">
+// //                     <X size={14} />
+// //                   </button>
+// //                 )}
+// //               </div>
+// //             </div>
+// //           )}
+          
+// //           {searchQuery && (
+// //             <div className="result-count">
+// //               {filteredAndSortedCart.length} result{filteredAndSortedCart.length !== 1 ? 's' : ''} found
+// //             </div>
+// //           )}
+          
+// //           <PriceTypeSelector 
+// //             priceType={priceType} 
+// //             onSelectPriceType={handlePriceTypeChange} 
+// //           />
+// //         </div>
+
+// //         <div className="product-grid">
+// //           {filteredAndSortedCart.map(product => {
+// //             const productId = product.id;
+// //             const batches = productBatches?.[productId] || [];
+// //             const selectedBatchIndex = selectedBatchMap?.[productId] ?? 0;
+// //             const availableBatches = batchAvailability?.[productId] || [];
+            
+// //             return (
+// //               <ProductRow
+// //                 key={product.id}
+// //                 item={product}
+// //                 onUpdateQty={updateQty}
+// //                 onQtyInputChange={updateQtyDirect}
+// //                 price={getCurrentPrice(product)}
+// //                 onPriceChange={saveCustomPrice}
+// //                 isEditingPrice={editingPriceId === product.id}
+// //                 onTogglePriceEdit={togglePriceEdit}
+// //                 onSavePriceEdit={saveCustomPrice}
+// //                 batches={batches}
+// //                 selectedBatchIndex={selectedBatchIndex}
+// //                 onSelectBatch={handleSelectBatch}
+// //                 isDark={isDark}
+// //                 availableBatches={availableBatches}
+// //               />
+// //             );
+// //           })}
+// //         </div>
+
+// //         {filteredAndSortedCart.length === 0 && (
+// //           <div className="empty-state">
+// //             <Package size={48} />
+// //             <p>
+// //               {selectedCategory 
+// //                 ? `No products found in "${selectedCategory}" category${searchQuery ? ` matching "${searchQuery}"` : ''}`
+// //                 : searchQuery 
+// //                   ? `No products match "${searchQuery}"`
+// //                   : 'No products available'}
+// //             </p>
+// //           </div>
+// //         )}
+// //       </div>
+
+// //       <div className="order-summary-panel">
+// //         <div className="summary-header">
+// //           <ShoppingCart size={20} />
+// //           <span>Order Summary</span>
+// //         </div>
+
+// //         <div className="summary-scrollable">
+// //           {cartItems.length === 0 ? (
+// //             <div className="summary-empty">No items added yet</div>
+// //           ) : (
+// //             cartItems.map((item, idx) => {
+// //               const currentPrice = getCurrentPrice(item);
+// //               const originalPrice = item[priceType] || 0;
+// //               const isPriceModified = item.priceModified?.[priceType] || false;
+// //               const isPriceReduced = isPriceModified && currentPrice < originalPrice;
+// //               const isPriceIncreased = isPriceModified && currentPrice > originalPrice;
+              
+// //               const batches = productBatches?.[item.id] || [];
+// //               const batchIndex = selectedBatchMap?.[item.id] ?? 0;
+// //               const selectedBatch = batches[batchIndex];
+              
+// //               return (
+// //                 <div className="summary-item" key={item.id}>
+// //                   <div className="summary-item-name">
+// //                     <span className="item-order-number">{idx + 1}.</span> {item.name}
+// //                     {selectedBatch && (
+// //                       <span style={{ 
+// //                         fontSize: '0.55rem', 
+// //                         color: isDark ? '#666' : '#999',
+// //                         background: isDark ? '#1f1f28' : '#f5f5f5',
+// //                         padding: '1px 6px',
+// //                         borderRadius: '8px',
+// //                         marginLeft: '4px',
+// //                         fontFamily: 'monospace'
+// //                       }}>
+// //                         {selectedBatch.batchNo}
+// //                       </span>
+// //                     )}
+// //                     {isPriceModified && (
+// //                       <span className={`price-badge ${isPriceReduced ? 'price-reduced' : 'price-increased'}`}>
+// //                         {isPriceReduced ? '⬇' : '⬆'}
+// //                       </span>
+// //                     )}
+// //                   </div>
+// //                   <div className="summary-item-right">
+// //                     <span className="summary-item-qty">×{item.qty}</span>
+// //                     <span className="summary-item-price">
+// //                       ₹{((currentPrice || 0) * item.qty).toLocaleString('en-IN')}
+// //                     </span>
+// //                   </div>
+// //                 </div>
+// //               );
+// //             })
+// //           )}
+// //         </div>
+
+// //         <div className="summary-divider" />
+
+// //         <div className="summary-row subtotal">
+// //           <span>Subtotal ({totalItems} item{totalItems !== 1 ? 's' : ''})</span>
+// //           <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+// //         </div>
+
+// //         <div className="summary-divider" />
+
+// //         <div className="summary-row grand-total">
+// //           <span>Total</span>
+// //           <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+// //         </div>
+
+// //         <button
+// //           className="place-order-btn"
+// //           onClick={handlePlaceOrder}
+// //           disabled={cartItems.length === 0 || isOrderPlacing}
+// //         >
+// //           {isOrderPlacing ? 'PLACING ORDER...' : 'PLACE ORDER'}
+// //         </button>
+// //       </div>
+// //     </div>
+// //   );
+// // };
+
+// // export default OrderCartPage;
