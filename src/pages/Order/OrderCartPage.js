@@ -499,7 +499,7 @@ const PriceTypeSelector = ({ priceType, onSelectPriceType }) => {
 
 // ─── Product Row ─────────────────────────────────────────────────────────────
 
-const ProductRow = ({ 
+const ProductRow = React.memo(({ 
   item, 
   onUpdateQty, 
   onQtyInputChange, 
@@ -760,7 +760,16 @@ const ProductRow = ({
       </div>
     </div>
   );
-};
+});
+
+// ✅ PERF FIX: ProductRow is now wrapped in React.memo (above). Previously,
+// `cart` held the ENTIRE product catalog (not just added items), so
+// clicking "+"/"-" replaced the whole cart array and re-rendered every
+// single product row on the page — that's why the number you clicked on
+// took a noticeable moment to actually update. With React.memo, only the
+// one row whose `item` reference actually changed re-renders; all the
+// other rows keep their previous render output untouched.
+ProductRow.displayName = 'ProductRow';
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
@@ -1068,6 +1077,15 @@ const OrderCartPage = () => {
     }));
   }, []);
 
+  // ✅ FIX: normalize the "no batch" case to the SAME sentinel value (null)
+  // on both the write side (saveCustomPrice) and the read side
+  // (getCurrentPrice). Previously saveCustomPrice stored `null` for
+  // `batchNo` when there was no selected batch, but getCurrentPrice
+  // compared against `selectedBatch?.batchNo`, which evaluates to
+  // `undefined` (not `null`) when there's no batch. `null === undefined`
+  // is `false` in JS, so the freshly-saved custom price was immediately
+  // rejected on the very next render and the UI fell back to the old
+  // default price — exactly the "price resets after saving" bug.
   const getCurrentPrice = useCallback((item) => {
     const batchIndex = selectedBatchMap[item.id] ?? 0;
     const batches = productBatches[item.id] || [];
@@ -1080,8 +1098,9 @@ const OrderCartPage = () => {
     
     const customPrice = item.customPrices?.[priceType];
     const isPriceModified = item.priceModified?.[priceType] === true;
-    const savedBatchNo = item._currentBatchForPrice?.batchNo;
-    const isCustomPriceForCurrentBatch = savedBatchNo === selectedBatch?.batchNo;
+    const savedBatchNo = item._currentBatchForPrice?.batchNo ?? null;
+    const currentBatchNo = selectedBatch?.batchNo ?? null;
+    const isCustomPriceForCurrentBatch = savedBatchNo === currentBatchNo;
     
     if (isPriceModified && 
         isCustomPriceForCurrentBatch && 
@@ -1121,7 +1140,10 @@ const OrderCartPage = () => {
           [priceType]: true
         },
         _currentBatchForPrice: {
-          batchNo: selectedBatch?.batchNo || null,
+          // ✅ FIX: use ?? (not ||) and normalize consistently with
+          // getCurrentPrice's `selectedBatch?.batchNo ?? null` so the two
+          // checks always agree on "no batch selected".
+          batchNo: selectedBatch?.batchNo ?? null,
           priceType: priceType,
           price: newPrice
         }
