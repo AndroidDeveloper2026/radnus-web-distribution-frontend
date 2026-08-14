@@ -1,3 +1,4 @@
+
 // src/components/ui/UI.js
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
@@ -231,11 +232,15 @@ export const DataTable = ({
   columns = [], data = [], loading, emptyIcon, emptyText = 'No records found',
   searchValue, onSearch, searchPlaceholder = 'Search…', actions,
   keyField = '_id',
+  // When the caller already paginates the `data` it hands us (e.g. server-side
+  // pagination via an API), set this to true so DataTable just renders every
+  // row it's given instead of re-slicing it into its own 10-per-page pages.
+  disablePagination = false,
 }) => {
   const [page, setPage]       = useState(1);
   const [perPage]             = useState(10);
-  const paginated = data.slice((page - 1) * perPage, page * perPage);
-  const totalPages = Math.ceil(data.length / perPage);
+  const paginated = disablePagination ? data : data.slice((page - 1) * perPage, page * perPage);
+  const totalPages = disablePagination ? 1 : Math.ceil(data.length / perPage);
 
   return (
     <div className="dtable-wrap">
@@ -265,7 +270,7 @@ export const DataTable = ({
             ) : (
               paginated.map((row, i) => (
                 <tr key={row[keyField] || i}>
-                  {columns.map(c => <td key={c.key}>{c.render ? c.render(row[c.key], row) : row[c.key] ?? '—'}</td>)}
+                  {columns.map(c => <td key={c.key}>{c.render ? c.render(row[c.key], row, i) : row[c.key] ?? '—'}</td>)}
                 </tr>
               ))
             )}
@@ -306,6 +311,9 @@ export const ConfirmDialog = ({ open, onClose, onConfirm, title, message, confir
   </Modal>
 );
 
+
+
+//------------ 13.08.2026 -------------------------------
 // // src/components/ui/UI.js
 // import React, { useState, useEffect } from 'react';
 // import { useTheme } from '../../context/ThemeContext';
@@ -447,16 +455,7 @@ export const ConfirmDialog = ({ open, onClose, onConfirm, title, message, confir
 //   </div>
 // );
 
-// // /* ─── Empty State ────────────────────────────────────────────────────────────── */
-// // export const EmptyState = ({ icon, title, subtitle, action }) => (
-// //   <div className="empty-state">
-// //     {icon && <div className="empty-icon">{icon}</div>}
-// //     <div className="empty-title">{title}</div>
-// //     {subtitle && <div className="empty-sub">{subtitle}</div>}
-// //     {action && <div className="empty-action">{action}</div>}
-// //   </div>
-// // );
-
+// /* ─── Empty State ────────────────────────────────────────────────────────────── */
 // export const EmptyState = ({ icon, title, subtitle, action }) => {
 //   const { theme } = useTheme();
 //   const isDark = theme === 'dark';

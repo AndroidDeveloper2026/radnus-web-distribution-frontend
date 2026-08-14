@@ -39,6 +39,7 @@ import {
   Clock,
   History,
   LineChart,
+  LayoutGrid,
 } from "lucide-react";
 
 const ROLE_NAV = {
@@ -62,6 +63,7 @@ const ROLE_NAV = {
     { path: "/purchase/stock-aging", label: "Stock Aging", icon: Clock },
     { path: "/purchase/non-moving-stock", label: "Non Moving Stock", icon: PackageX },
     // { path: "/purchase/price-history", label: "Price History", icon: History },
+    { path: "/data-explorer", label: "Data Explorer", icon: LayoutGrid },
     { path: "/activity-logs", label: "Activity Log", icon: FileText },
     { path: "/admin-feedback", label: "Admin Feedback", icon: MessageSquare },
     { path: "/sales-return", label: "Sales Return", icon: RotateCcw },
@@ -87,6 +89,7 @@ const ROLE_NAV = {
     { path: "/purchase/stock-aging", label: "Stock Aging", icon: Clock },
     { path: "/purchase/non-moving-stock", label: "Non Moving Stock", icon: PackageX },
     // { path: "/purchase/price-history", label: "Price History", icon: History },
+    { path: "/data-explorer", label: "Data Explorer", icon: LayoutGrid },
     { path: "/feedback", label: "Feedback", icon: Star },
     { path: "/sales-return", label: "Sales Return", icon: RotateCcw },
     { path: "/purchase-return", label: "Purchase Return", icon: PackageX },

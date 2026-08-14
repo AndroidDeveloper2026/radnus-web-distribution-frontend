@@ -69,6 +69,7 @@ import NonMovingStockPage from "./pages/Purchase/NonMovingStockPage";
 import ProductPriceHistoryPage from "./pages/Purchase/ProductPriceHistoryPage";
 
 import { PageLoader } from "./components/ui/UI";
+import DataExplorerPage from "./pages/Stock/DataExplorerPage";
 
 const ROLE_ROUTES = {
   Admin: [
@@ -104,6 +105,7 @@ const ROLE_ROUTES = {
     "non-moving-stock",
     // "price-history",
     "product-price-history",
+    "data-explorer",
   ],
   Radnus: [
     "dashboard",
@@ -132,6 +134,7 @@ const ROLE_ROUTES = {
     "non-moving-stock",
     // "price-history",
     "product-price-history",
+    "data-explorer",
   ],
   Distributor: [
     "dashboard",
@@ -658,6 +661,18 @@ const AppRouterInner = () => {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/data-explorer"
+            element={
+              <ProtectedRoute>
+                <RolePage routeKey="data-explorer">
+                  <DataExplorerPage />
+                </RolePage>
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/purchase/stock-aging"
             element={
@@ -1202,7 +1217,7 @@ export default AppRouter;
 //               </ProtectedRoute>
 //             }
 //           />
-//           {/* 
+//           {/*
 //           <Route
 //             path="/feedback"
 //             element={
