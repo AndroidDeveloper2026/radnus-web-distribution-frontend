@@ -1,4 +1,4 @@
-// OrderSuccessPage.js - COMPLETE FIXED VERSION with stock refresh
+// OrderSuccessPage.js - COMPLETE FIXED VERSION with No-Batch Support
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -260,25 +260,31 @@ const OrderSuccessPage = () => {
         ? customer?.state || ""
         : shipToState;
 
-      // Build items for invoice
+      // Build items for invoice - FIXED: Handle no-batch products
       const invoiceItems = cartItems.map((item) => {
         const allocations = getBatchAllocationsForItem(item);
-        const hasBatches = allocations.length > 0;
+        // Check if the item has valid batch allocations (not 'default' string)
+        const hasValidBatches = allocations && allocations.length > 0 && 
+          allocations.some(a => a.batchNumber && a.batchNumber !== 'default');
 
         const baseItem = {
           productId: item.id,
           name: item.name,
           qty: item.qty || 0,
           price: item.price || item.originalPrice || 0,
-          useDefaultPrice: !hasBatches,
+          useDefaultPrice: !hasValidBatches,
         };
 
-        if (hasBatches) {
-          baseItem.batchAllocations = allocations.map((alloc) => ({
-            batchNumber: alloc.batchNumber,
-            qty: alloc.qty || item.qty || 0,
-            purchaseCost: alloc.purchaseCost || item.price || 0,
-          }));
+        // Only add batchAllocations if there are valid batch numbers
+        if (hasValidBatches) {
+          baseItem.batchAllocations = allocations
+            .filter(a => a.batchNumber && a.batchNumber !== 'default')
+            .map((alloc) => ({
+              batchNumber: alloc.batchNumber,
+              qty: alloc.qty || item.qty || 0,
+              purchaseCost: alloc.purchaseCost || item.price || 0,
+              sellingPrice: alloc.sellingPrice || item.price || 0,
+            }));
         }
 
         return baseItem;
@@ -490,18 +496,21 @@ const OrderSuccessPage = () => {
             <h4>Batch Allocations</h4>
             {cartItems.map((item) => {
               const allocations = getBatchAllocationsForItem(item);
-              const hasBatches = allocations.length > 0;
+              const hasValidBatches = allocations && allocations.length > 0 && 
+                allocations.some(a => a.batchNumber && a.batchNumber !== 'default');
 
               return (
                 <div key={item.id} className="batch-summary-item">
                   <div className="batch-summary-product">{item.name}</div>
                   <div className="batch-summary-batches">
-                    {hasBatches ? (
-                      allocations.map((alloc, idx) => (
-                        <span key={idx} className="batch-summary-tag">
-                          {alloc.batchNumber}: {alloc.qty || item.qty} units
-                        </span>
-                      ))
+                    {hasValidBatches ? (
+                      allocations
+                        .filter(a => a.batchNumber && a.batchNumber !== 'default')
+                        .map((alloc, idx) => (
+                          <span key={idx} className="batch-summary-tag">
+                            {alloc.batchNumber}: {alloc.qty || item.qty} units
+                          </span>
+                        ))
                     ) : (
                       <span className="batch-summary-tag default-batch">
                         Using default price (no batch)
@@ -1103,19 +1112,22 @@ const OrderSuccessPage = () => {
                   <h4>Batch Allocations</h4>
                   {cartItems.map((item) => {
                     const allocations = getBatchAllocationsForItem(item);
-                    const hasBatches = allocations.length > 0;
+                    const hasValidBatches = allocations && allocations.length > 0 && 
+                      allocations.some(a => a.batchNumber && a.batchNumber !== 'default');
 
                     return (
                       <div key={item.id} className="confirm-batch-item">
                         <span className="confirm-batch-product">
                           {item.name}
                         </span>
-                        {hasBatches ? (
-                          allocations.map((alloc, idx) => (
-                            <span key={idx} className="confirm-batch-tag">
-                              {alloc.batchNumber}: {alloc.qty || item.qty}
-                            </span>
-                          ))
+                        {hasValidBatches ? (
+                          allocations
+                            .filter(a => a.batchNumber && a.batchNumber !== 'default')
+                            .map((alloc, idx) => (
+                              <span key={idx} className="confirm-batch-tag">
+                                {alloc.batchNumber}: {alloc.qty || item.qty}
+                              </span>
+                            ))
                         ) : (
                           <span className="confirm-batch-tag default-batch">
                             Using default price (no batch)
@@ -1206,7 +1218,7 @@ const OrderSuccessPage = () => {
 
 export default OrderSuccessPage;
 
-//-------------- 14.08.2026 -------------------------------
+//============ 18.08.2026 ======================================
 // // OrderSuccessPage.js - COMPLETE FIXED VERSION with stock refresh
 
 // import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -1325,6 +1337,7 @@ export default OrderSuccessPage;
 //   const [shipToCity, setShipToCity] = useState("");
 //   const [shipToState, setShipToState] = useState("");
 //   const [courierCharge, setCourierCharge] = useState("0");
+//   const [gstAmount, setGstAmount] = useState("0");
 //   const [selectedSP, setSelectedSP] = useState(null);
 //   const [dropdownOpen, setDropdownOpen] = useState(false);
 //   const [discount, setDiscount] = useState("0");
@@ -1429,19 +1442,22 @@ export default OrderSuccessPage;
 
 //   // ─── Get batch allocations safely ──────────────────────────────────────
 
-//   const getBatchAllocationsForItem = useCallback((item) => {
-//     let allocations = [];
+//   const getBatchAllocationsForItem = useCallback(
+//     (item) => {
+//       let allocations = [];
 
-//     if (batchSelections && batchSelections[item.id]?.batchAllocations) {
-//       allocations = batchSelections[item.id].batchAllocations;
-//     }
+//       if (batchSelections && batchSelections[item.id]?.batchAllocations) {
+//         allocations = batchSelections[item.id].batchAllocations;
+//       }
 
-//     if (allocations.length === 0 && item.batchAllocations) {
-//       allocations = item.batchAllocations;
-//     }
+//       if (allocations.length === 0 && item.batchAllocations) {
+//         allocations = item.batchAllocations;
+//       }
 
-//     return allocations;
-//   }, [batchSelections]);
+//       return allocations;
+//     },
+//     [batchSelections],
+//   );
 
 //   // ─── goToInvoice - Stock reduced ONLY in backend ──────────────────────
 
@@ -1491,13 +1507,15 @@ export default OrderSuccessPage;
 
 //       // Calculate totals
 //       const subtotal = cartItems.reduce(
-//         (sum, item) => sum + (item.price || item.originalPrice || 0) * (item.qty || 0),
-//         0
+//         (sum, item) =>
+//           sum + (item.price || item.originalPrice || 0) * (item.qty || 0),
+//         0,
 //       );
 //       const discountAmount = parseFloat(discount) || 0;
 //       const afterDiscount = Math.max(subtotal - discountAmount, 0);
 //       const courier = parseFloat(courierCharge) || 0;
-//       const totalWithCourier = afterDiscount + courier;
+//       const gst = parseFloat(gstAmount) || 0;
+//       const totalWithCourier = afterDiscount + courier + gst;
 
 //       // Prepare invoice payload
 //       const payload = {
@@ -1524,16 +1542,22 @@ export default OrderSuccessPage;
 //         subtotal,
 //         discount: discountAmount,
 //         courierCharge: courier,
+//         gstAmount: gst,
 //         salesperson: selectedSP?.name || "",
 //         referenceNo: referenceNo || "",
 //         invoiceDate: date || new Date().toISOString(),
 //         orderType: orderType || "",
 //         priceType: priceType || "retailerPrice",
 //         allowDefaultBatches: true,
-//         hasDefaultBatches: hasDefaultBatches || invoiceItems.some(item => item.useDefaultPrice),
+//         hasDefaultBatches:
+//           hasDefaultBatches ||
+//           invoiceItems.some((item) => item.useDefaultPrice),
 //       };
 
-//       console.log("📤 Creating invoice (stock will be reduced in backend):", JSON.stringify(payload, null, 2));
+//       console.log(
+//         "📤 Creating invoice (stock will be reduced in backend):",
+//         JSON.stringify(payload, null, 2),
+//       );
 
 //       // ✅ Send to backend - createInvoice handles stock reduction
 //       const invoiceRes = await API.post("/api/invoices", payload);
@@ -1559,6 +1583,7 @@ export default OrderSuccessPage;
 //           buyerState: customer?.state || "",
 //           courierCharge: courier,
 //           discount: discountAmount,
+//           gstAmount: gst,
 //           salesperson: selectedSP?.name || "",
 //           referenceNo,
 //           shipToName: finalShipToName,
@@ -1574,7 +1599,6 @@ export default OrderSuccessPage;
 //           priceType: priceType,
 //         },
 //       });
-
 //     } catch (err) {
 //       console.error("❌ Invoice creation error:", err);
 
@@ -1662,11 +1686,16 @@ export default OrderSuccessPage;
 
 //   const discountAmount = parseFloat(discount) || 0;
 //   const subtotal = cartItems
-//     ? cartItems.reduce((sum, item) => sum + (item.price || item.originalPrice || 0) * (item.qty || 0), 0)
+//     ? cartItems.reduce(
+//         (sum, item) =>
+//           sum + (item.price || item.originalPrice || 0) * (item.qty || 0),
+//         0,
+//       )
 //     : 0;
 //   const afterDiscount = Math.max(subtotal - discountAmount, 0);
 //   const courier = parseFloat(courierCharge) || 0;
-//   const grandTotalWithCourier = afterDiscount + courier;
+//   const gst = parseFloat(gstAmount) || 0;
+//   const grandTotalWithCourier = afterDiscount + courier + gst;
 
 //   if (!cartItems)
 //     return <div className="loading-state">No cart items found</div>;
@@ -2009,6 +2038,20 @@ export default OrderSuccessPage;
 //             )}
 //           </div>
 
+//           {/* GST Amount */}
+//           <div className="field-group">
+//             <label>
+//               <IndianRupee size={14} /> GST (₹)
+//             </label>
+//             <input
+//               type="text"
+//               value={gstAmount}
+//               onChange={(e) => setGstAmount(e.target.value)}
+//               className="field-input"
+//               placeholder="0"
+//             />
+//           </div>
+
 //           {/* Courier Charge */}
 //           <div className="field-group">
 //             <label>
@@ -2041,6 +2084,12 @@ export default OrderSuccessPage;
 //               <span>Courier Charge</span>
 //               <span>₹{courier.toLocaleString("en-IN")}</span>
 //             </div>
+//             {gst > 0 && (
+//               <div className="summary-row">
+//                 <span>GST</span>
+//                 <span>₹{gst.toLocaleString("en-IN")}</span>
+//               </div>
+//             )}
 //             <hr />
 //             <div className="summary-row total">
 //               <span>Grand Total</span>
@@ -2341,6 +2390,11 @@ export default OrderSuccessPage;
 //                     <strong>Discount:</strong> <span>₹{discountAmount}</span>
 //                   </div>
 //                 )}
+//                 {gst > 0 && (
+//                   <div>
+//                     <strong>GST:</strong> <span>₹{gst}</span>
+//                   </div>
+//                 )}
 //                 <div>
 //                   <strong>Grand Total:</strong>{" "}
 //                   <span>₹{grandTotalWithCourier.toLocaleString("en-IN")}</span>
@@ -2372,3 +2426,4 @@ export default OrderSuccessPage;
 // };
 
 // export default OrderSuccessPage;
+

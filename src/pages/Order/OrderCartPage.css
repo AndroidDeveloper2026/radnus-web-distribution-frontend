@@ -4,8 +4,8 @@
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
-  padding: 2rem;
-  min-height: 100vh;
+  /* padding: 2rem; */
+  /* min-height: 100vh; */
   background: var(--bg-base);
   color: var(--text-primary);
   box-sizing: border-box;
