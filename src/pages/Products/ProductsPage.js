@@ -44,6 +44,7 @@ const CAT_OPTS = [
   { value: 'BATTERY', label: 'BATTERY' },
   { value: 'POWER BANK', label: 'POWER BANK' },
   { value: 'SOFTWARE TOOL', label: 'SOFTWARE TOOL' },
+  { value: 'MOBILE', label: 'MOBILE' },
 ];
 
 const STATUS_OPTS = [
