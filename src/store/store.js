@@ -21,6 +21,7 @@ import approvalsReducer from '../services/features/approvals/approvalSlice';
 import purchaseReducer from '../services/features/purchase/purchaseSlice';
 import supplierReducer from '../services/features/purchase/supplierSlice';
 import billingReducer from '../services/features/billing/billingSlice';
+import salespersonReducer from '../services/features/salesperson/salespersonSlice'; 
 
 export const store = configureStore({
   reducer: {
@@ -45,5 +46,6 @@ export const store = configureStore({
     purchases: purchaseReducer,
     suppliers: supplierReducer,
     billing: billingReducer,
+    salesperson: salespersonReducer,
   },
 });
