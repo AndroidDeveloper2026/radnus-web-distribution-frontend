@@ -64,6 +64,14 @@ const formatDate = (iso) =>
     year: "numeric",
   });
 
+// ─── Safe numeric parsing (preserves 0, handles "", null, NaN, negatives) ───
+const parseAmount = (val) => {
+  if (val === "" || val === null || val === undefined) return 0;
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0) return 0;
+  return num;
+};
+
 const OrderSuccessPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -92,7 +100,7 @@ const OrderSuccessPage = () => {
     error: customerError,
   } = useSelector((s) => s.customer);
   const user = useSelector((state) => state.auth.user);
-  
+
   const {
     list: salespersons,
     loading: salespersonsLoading,
@@ -137,7 +145,7 @@ const OrderSuccessPage = () => {
   const [shopName, setShopName] = useState("");
   const [orderType, setOrderType] = useState("");
   const [orderTypeDropdownOpen, setOrderTypeDropdownOpen] = useState(false);
-  
+
   // ─── Add Salesperson Modal ─────────────────────────────────────────────
   const [addSalespersonModalVisible, setAddSalespersonModalVisible] = useState(false);
   const [newSalespersonName, setNewSalespersonName] = useState("");
@@ -250,12 +258,12 @@ const OrderSuccessPage = () => {
 
     try {
       const result = await dispatch(addSalesperson(trimmedName)).unwrap();
-      
+
       setSelectedSP(result);
       setNewSalespersonName("");
       setAddSalespersonModalVisible(false);
       setDropdownOpen(false);
-      
+
       await dispatch(fetchSalespersons());
     } catch (err) {
       setSalespersonAddErrorMsg(err || "Failed to add salesperson. Please try again.");
@@ -293,9 +301,7 @@ const OrderSuccessPage = () => {
 
     try {
       const finalShipToName = sameAsBuyer
-        ? customer?.type === "shop"
-          ? customer?.name
-          : customer?.name
+        ? customer?.name
         : shipToName;
       const finalShipToPhone = sameAsBuyer ? buyerPhone : shipToPhone;
       const finalShipToAddress = sameAsBuyer
@@ -308,8 +314,12 @@ const OrderSuccessPage = () => {
 
       const invoiceItems = cartItems.map((item) => {
         const allocations = getBatchAllocationsForItem(item);
-        const hasValidBatches = allocations && allocations.length > 0 && 
-          allocations.some(a => a.batchNumber && a.batchNumber !== 'default');
+        const hasValidBatches =
+          allocations &&
+          allocations.length > 0 &&
+          allocations.some(
+            (a) => a.batchNumber && a.batchNumber !== "default",
+          );
 
         const baseItem = {
           productId: item.id,
@@ -321,7 +331,7 @@ const OrderSuccessPage = () => {
 
         if (hasValidBatches) {
           baseItem.batchAllocations = allocations
-            .filter(a => a.batchNumber && a.batchNumber !== 'default')
+            .filter((a) => a.batchNumber && a.batchNumber !== "default")
             .map((alloc) => ({
               batchNumber: alloc.batchNumber,
               qty: alloc.qty || item.qty || 0,
@@ -333,15 +343,16 @@ const OrderSuccessPage = () => {
         return baseItem;
       });
 
+      // ─── SAFE NUMERIC PARSING ──────────────────────────────────────────
       const subtotal = cartItems.reduce(
         (sum, item) =>
           sum + (item.price || item.originalPrice || 0) * (item.qty || 0),
         0,
       );
-      const discountAmount = parseFloat(discount) || 0;
+      const discountAmount = parseAmount(discount);
       const afterDiscount = Math.max(subtotal - discountAmount, 0);
-      const courier = parseFloat(courierCharge) || 0;
-      const gst = parseFloat(gstAmount) || 0;
+      const courier = parseAmount(courierCharge);
+      const gst = parseAmount(gstAmount);
       const totalWithCourier = afterDiscount + courier + gst;
 
       const payload = {
@@ -366,9 +377,9 @@ const OrderSuccessPage = () => {
           state: finalShipToState || customer?.state || "",
         },
         subtotal,
-        discount: discountAmount,
-        courierCharge: courier,
-        gstAmount: gst,
+        discount: discountAmount,     // number
+        courierCharge: courier,       // number (0 allowed)
+        gstAmount: gst,               // number (0 allowed)
         salesperson: selectedSP?.name || "",
         referenceNo: referenceNo || "",
         invoiceDate: date || new Date().toISOString(),
@@ -397,9 +408,9 @@ const OrderSuccessPage = () => {
           buyerAddress: customer?.address || "",
           buyerCity: customer?.city || "",
           buyerState: customer?.state || "",
-          courierCharge: courier,
-          discount: discountAmount,
-          gstAmount: gst,
+          courierCharge: courier,       // number, 0 allowed
+          discount: discountAmount,     // number
+          gstAmount: gst,               // number
           salesperson: selectedSP?.name || "",
           referenceNo,
           shipToName: finalShipToName,
@@ -504,7 +515,8 @@ const OrderSuccessPage = () => {
     );
   };
 
-  const discountAmount = parseFloat(discount) || 0;
+  // ─── Derived totals for preview ───────────────────────────────────────
+  const discountAmount = parseAmount(discount);
   const subtotal = cartItems
     ? cartItems.reduce(
         (sum, item) =>
@@ -513,8 +525,8 @@ const OrderSuccessPage = () => {
       )
     : 0;
   const afterDiscount = Math.max(subtotal - discountAmount, 0);
-  const courier = parseFloat(courierCharge) || 0;
-  const gst = parseFloat(gstAmount) || 0;
+  const courier = parseAmount(courierCharge);
+  const gst = parseAmount(gstAmount);
   const grandTotalWithCourier = afterDiscount + courier + gst;
 
   if (!cartItems)
@@ -531,8 +543,12 @@ const OrderSuccessPage = () => {
             <h4>Batch Allocations</h4>
             {cartItems.map((item) => {
               const allocations = getBatchAllocationsForItem(item);
-              const hasValidBatches = allocations && allocations.length > 0 && 
-                allocations.some(a => a.batchNumber && a.batchNumber !== 'default');
+              const hasValidBatches =
+                allocations &&
+                allocations.length > 0 &&
+                allocations.some(
+                  (a) => a.batchNumber && a.batchNumber !== "default",
+                );
 
               return (
                 <div key={item.id} className="batch-summary-item">
@@ -540,7 +556,9 @@ const OrderSuccessPage = () => {
                   <div className="batch-summary-batches">
                     {hasValidBatches ? (
                       allocations
-                        .filter(a => a.batchNumber && a.batchNumber !== 'default')
+                        .filter(
+                          (a) => a.batchNumber && a.batchNumber !== "default",
+                        )
                         .map((alloc, idx) => (
                           <span key={idx} className="batch-summary-tag">
                             {alloc.batchNumber}: {alloc.qty || item.qty} units
@@ -669,8 +687,16 @@ const OrderSuccessPage = () => {
             </label>
             <input
               type="number"
+              min="0"
+              step="0.01"
               value={discount}
               onChange={(e) => setDiscount(e.target.value)}
+              onBlur={(e) => {
+                const num = parseFloat(e.target.value);
+                setDiscount(
+                  isNaN(num) || num < 0 ? "0" : String(num),
+                );
+              }}
               className="field-input"
               placeholder="0"
             />
@@ -686,23 +712,27 @@ const OrderSuccessPage = () => {
             </div>
           </div>
 
-          {/* ─── Salesperson with "Add New" Button at Top ─── */}
+          {/* Salesperson */}
           <div className="field-group" ref={salespersonDropdownRef}>
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "4px",
-            }}>
-              <label style={{
+            <div
+              style={{
                 display: "flex",
+                justifyContent: "space-between",
                 alignItems: "center",
-                gap: "0.5rem",
-                fontSize: "0.85rem",
-                fontWeight: 500,
-                color: "var(--text-secondary)",
-                margin: 0,
-              }}>
+                marginBottom: "4px",
+              }}
+            >
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  fontSize: "0.85rem",
+                  fontWeight: 500,
+                  color: "var(--text-secondary)",
+                  margin: 0,
+                }}
+              >
                 <User size={14} /> Salesperson *
               </label>
               <button
@@ -735,19 +765,29 @@ const OrderSuccessPage = () => {
 
             <div
               className={`custom-select ${!selectedSP ? "error" : ""}`}
-              onClick={() => !salespersonsLoading && setDropdownOpen(!dropdownOpen)}
+              onClick={() =>
+                !salespersonsLoading && setDropdownOpen(!dropdownOpen)
+              }
               style={{
                 borderColor: !selectedSP ? "var(--red-bright)" : undefined,
                 cursor: salespersonsLoading ? "default" : "pointer",
               }}
             >
-              <span style={{ 
-                color: !selectedSP ? "var(--text-muted)" : undefined 
-              }}>
+              <span
+                style={{
+                  color: !selectedSP ? "var(--text-muted)" : undefined,
+                }}
+              >
                 {salespersonsLoading ? (
-                  <Loader size={16} className="spin" style={{ display: "inline-block", marginRight: "6px" }} />
+                  <Loader
+                    size={16}
+                    className="spin"
+                    style={{ display: "inline-block", marginRight: "6px" }}
+                  />
                 ) : null}
-                {selectedSP ? selectedSP.name : "Select salesperson… (Required)"}
+                {selectedSP
+                  ? selectedSP.name
+                  : "Select salesperson… (Required)"}
               </span>
               <ChevronDown
                 size={16}
@@ -761,9 +801,18 @@ const OrderSuccessPage = () => {
               <div className="status-row">Loading salespersons...</div>
             )}
             {dropdownOpen && !salespersonsLoading && (
-              <div className="dropdown-list" style={{ maxHeight: "200px", overflowY: "auto" }}>
+              <div
+                className="dropdown-list"
+                style={{ maxHeight: "200px", overflowY: "auto" }}
+              >
                 {salespersons.length === 0 ? (
-                  <div style={{ padding: "10px 14px", fontSize: "13px", color: "var(--text-muted)" }}>
+                  <div
+                    style={{
+                      padding: "10px 14px",
+                      fontSize: "13px",
+                      color: "var(--text-muted)",
+                    }}
+                  >
                     No salespersons found. Click "Add New" to create one.
                   </div>
                 ) : (
@@ -930,9 +979,17 @@ const OrderSuccessPage = () => {
               <IndianRupee size={14} /> GST (₹)
             </label>
             <input
-              type="text"
+              type="number"
+              min="0"
+              step="0.01"
               value={gstAmount}
               onChange={(e) => setGstAmount(e.target.value)}
+              onBlur={(e) => {
+                const num = parseFloat(e.target.value);
+                setGstAmount(
+                  isNaN(num) || num < 0 ? "0" : String(num),
+                );
+              }}
               className="field-input"
               placeholder="0"
             />
@@ -944,12 +1001,29 @@ const OrderSuccessPage = () => {
               <Truck size={14} /> Courier Charge (₹)
             </label>
             <input
-              type="text"
+              type="number"
+              min="0"
+              step="0.01"
               value={courierCharge}
               onChange={(e) => setCourierCharge(e.target.value)}
+              onBlur={(e) => {
+                const num = parseFloat(e.target.value);
+                setCourierCharge(
+                  isNaN(num) || num < 0 ? "0" : String(num),
+                );
+              }}
               className="field-input"
               placeholder="0"
             />
+            <div
+              style={{
+                fontSize: "0.7rem",
+                color: "var(--text-muted)",
+                marginTop: "4px",
+              }}
+            >
+              Enter 0 for no courier charge
+            </div>
           </div>
 
           {/* Total Preview */}
@@ -987,9 +1061,21 @@ const OrderSuccessPage = () => {
         <button
           className="primary-btn"
           onClick={handleViewInvoice}
-          disabled={isConfirming || !referenceNo.trim() || !orderType || !selectedSP || salespersonsLoading}
+          disabled={
+            isConfirming ||
+            !referenceNo.trim() ||
+            !orderType ||
+            !selectedSP ||
+            salespersonsLoading
+          }
           style={{
-            opacity: !referenceNo.trim() || !orderType || !selectedSP || salespersonsLoading ? "0.5" : "1",
+            opacity:
+              !referenceNo.trim() ||
+              !orderType ||
+              !selectedSP ||
+              salespersonsLoading
+                ? "0.5"
+                : "1",
           }}
         >
           <FileText size={18} /> View Invoice
@@ -1024,7 +1110,10 @@ const OrderSuccessPage = () => {
               </button>
             </div>
             <div className="modal-body">
-              <div className="phone-pill" style={{ background: "var(--bg-surface)" }}>
+              <div
+                className="phone-pill"
+                style={{ background: "var(--bg-surface)" }}
+              >
                 <User size={13} /> New Salesperson
               </div>
               <input
@@ -1045,17 +1134,26 @@ const OrderSuccessPage = () => {
                 disabled={addingSalesperson}
               />
               {salespersonAddErrorMsg && (
-                <div style={{ 
-                  fontSize: "0.75rem", 
-                  color: "var(--red-bright)", 
-                  marginBottom: "0.75rem",
-                  fontWeight: 500,
-                }}>
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--red-bright)",
+                    marginBottom: "0.75rem",
+                    fontWeight: 500,
+                  }}
+                >
                   ⚠️ {salespersonAddErrorMsg}
                 </div>
               )}
-              <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
-                This will add the salesperson to the database for all future invoices.
+              <div
+                style={{
+                  fontSize: "0.7rem",
+                  color: "var(--text-muted)",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                This will add the salesperson to the database for all future
+                invoices.
               </div>
               <button
                 className="save-btn"
@@ -1296,8 +1394,12 @@ const OrderSuccessPage = () => {
                   <h4>Batch Allocations</h4>
                   {cartItems.map((item) => {
                     const allocations = getBatchAllocationsForItem(item);
-                    const hasValidBatches = allocations && allocations.length > 0 && 
-                      allocations.some(a => a.batchNumber && a.batchNumber !== 'default');
+                    const hasValidBatches =
+                      allocations &&
+                      allocations.length > 0 &&
+                      allocations.some(
+                        (a) => a.batchNumber && a.batchNumber !== "default",
+                      );
 
                     return (
                       <div key={item.id} className="confirm-batch-item">
@@ -1306,7 +1408,10 @@ const OrderSuccessPage = () => {
                         </span>
                         {hasValidBatches ? (
                           allocations
-                            .filter(a => a.batchNumber && a.batchNumber !== 'default')
+                            .filter(
+                              (a) =>
+                                a.batchNumber && a.batchNumber !== "default",
+                            )
                             .map((alloc, idx) => (
                               <span key={idx} className="confirm-batch-tag">
                                 {alloc.batchNumber}: {alloc.qty || item.qty}
@@ -1379,7 +1484,9 @@ const OrderSuccessPage = () => {
                 <button
                   className="primary-btn"
                   onClick={goToInvoice}
-                  disabled={isConfirming || !referenceNo.trim() || !orderType || !selectedSP}
+                  disabled={
+                    isConfirming || !referenceNo.trim() || !orderType || !selectedSP
+                  }
                 >
                   {isConfirming
                     ? "Processing..."
@@ -1402,8 +1509,8 @@ const OrderSuccessPage = () => {
 
 export default OrderSuccessPage;
 
-//------------ 04.09.2026 Old working code ----------------------------
-// // OrderSuccessPage.js - COMPLETE FIXED VERSION with No-Batch Support
+//---------------- 01.10.2026 ---------------------------
+// // OrderSuccessPage.js - Salesperson with "Add New" at Top
 
 // import React, { useState, useEffect, useRef, useCallback } from "react";
 // import { useDispatch, useSelector } from "react-redux";
@@ -1416,6 +1523,11 @@ export default OrderSuccessPage;
 //   clearAddState,
 //   clearUpdateState,
 // } from "../../services/features/customers/customerSlice";
+// import {
+//   fetchSalespersons,
+//   addSalesperson,
+//   clearSalespersonErrors,
+// } from "../../services/features/salesperson/salespersonSlice";
 // import { fetchProducts } from "../../services/features/products/productSlice";
 // import API from "../../services/API/api";
 // import { useTheme } from "../../context/ThemeContext";
@@ -1438,26 +1550,9 @@ export default OrderSuccessPage;
 //   CreditCard,
 //   IndianRupee,
 //   Check,
+//   Plus,
+//   Loader,
 // } from "lucide-react";
-
-// const SALESPERSONS = [
-//   { id: 1, name: "SHANTHI" },
-//   { id: 2, name: "HARIVARTHINI" },
-//   { id: 3, name: "UMA MAM" },
-//   { id: 4, name: "SHARMILA" },
-//   { id: 5, name: "MOHANA AMBIGAI" },
-//   { id: 6, name: "KALAIVANI" },
-//   { id: 7, name: "SUNDER SIR" },
-//   { id: 8, name: "PAVITHRA" },
-//   { id: 9, name: "SARANYA" },
-//   { id: 10, name: "VIJAYA LAKSHMI" },
-//   { id: 11, name: "VENNILA" },
-//   { id: 12, name: "ASHWINI" },
-//   { id: 13, name: "PRIYADHARSHNI" },
-//   { id: 14, name: "GOMATHI" },
-//   { id: 15, name: "KAVIBHARATHI" },
-//   { id: 16, name: "DHANALAKSHMI" },
-// ];
 
 // const PAYMENT_MODES = [
 //   { id: 1, label: "Cash" },
@@ -1489,7 +1584,6 @@ export default OrderSuccessPage;
 
 //   const {
 //     cartItems,
-//     grandTotal,
 //     paymentMode: initialPaymentMode,
 //     date,
 //     batchSelections = {},
@@ -1498,7 +1592,26 @@ export default OrderSuccessPage;
 //     hasDefaultBatches = false,
 //   } = location.state || {};
 
-//   // State
+//   // ─── Redux ──────────────────────────────────────────────────────────────
+//   const {
+//     lookupData: customer,
+//     lookupState,
+//     addLoading,
+//     addSuccess,
+//     updateLoading,
+//     updateSuccess,
+//     error: customerError,
+//   } = useSelector((s) => s.customer);
+//   const user = useSelector((state) => state.auth.user);
+  
+//   const {
+//     list: salespersons,
+//     loading: salespersonsLoading,
+//     adding: addingSalesperson,
+//     addError: salespersonAddError,
+//   } = useSelector((state) => state.salesperson);
+
+//   // ─── State ──────────────────────────────────────────────────────────────
 //   const [referenceNo, setReferenceNo] = useState("");
 //   const [buyerPhone, setBuyerPhone] = useState("");
 //   const [phoneError, setPhoneError] = useState(false);
@@ -1535,25 +1648,37 @@ export default OrderSuccessPage;
 //   const [shopName, setShopName] = useState("");
 //   const [orderType, setOrderType] = useState("");
 //   const [orderTypeDropdownOpen, setOrderTypeDropdownOpen] = useState(false);
+  
+//   // ─── Add Salesperson Modal ─────────────────────────────────────────────
+//   const [addSalespersonModalVisible, setAddSalespersonModalVisible] = useState(false);
+//   const [newSalespersonName, setNewSalespersonName] = useState("");
+//   const [salespersonAddErrorMsg, setSalespersonAddErrorMsg] = useState("");
 
 //   // Refs
 //   const paymentDropdownRef = useRef();
 //   const salespersonDropdownRef = useRef();
 //   const orderTypeDropdownRef = useRef();
 
-//   // Redux
-//   const {
-//     lookupData: customer,
-//     lookupState,
-//     addLoading,
-//     addSuccess,
-//     updateLoading,
-//     updateSuccess,
-//     error,
-//   } = useSelector((s) => s.customer);
-//   const user = useSelector((state) => state.auth.user);
+//   // ─── Load salespersons on mount ────────────────────────────────────────
+//   useEffect(() => {
+//     dispatch(fetchSalespersons());
+//   }, [dispatch]);
 
-//   // Effects
+//   // ─── Reset salesperson error when modal closes ────────────────────────
+//   useEffect(() => {
+//     if (!addSalespersonModalVisible) {
+//       setSalespersonAddErrorMsg("");
+//       dispatch(clearSalespersonErrors());
+//     }
+//   }, [addSalespersonModalVisible, dispatch]);
+
+//   useEffect(() => {
+//     if (salespersonAddError) {
+//       setSalespersonAddErrorMsg(salespersonAddError);
+//     }
+//   }, [salespersonAddError]);
+
+//   // ─── Customer effects ──────────────────────────────────────────────────
 //   useEffect(() => {
 //     if (!cartItems) navigate("/order-cart");
 //   }, [cartItems, navigate]);
@@ -1581,10 +1706,10 @@ export default OrderSuccessPage;
 //       dispatch(clearAddState());
 //       dispatch(lookupCustomer(buyerPhone));
 //     }
-//     if (error && addLoading === false) {
-//       alert("Error: " + error);
+//     if (customerError && addLoading === false) {
+//       alert("Error: " + customerError);
 //     }
-//   }, [addSuccess, error, addLoading, dispatch, buyerPhone]);
+//   }, [addSuccess, customerError, addLoading, dispatch, buyerPhone]);
 
 //   useEffect(() => {
 //     if (updateSuccess) {
@@ -1593,12 +1718,12 @@ export default OrderSuccessPage;
 //       dispatch(clearUpdateState());
 //       alert("Customer details updated successfully.");
 //     }
-//     if (error && updateLoading === false && updateSuccess === false) {
-//       alert("Error: " + error);
+//     if (customerError && updateLoading === false && updateSuccess === false) {
+//       alert("Error: " + customerError);
 //     }
-//   }, [updateSuccess, error, updateLoading, dispatch, buyerPhone]);
+//   }, [updateSuccess, customerError, updateLoading, dispatch, buyerPhone]);
 
-//   // Close dropdowns
+//   // ─── Close dropdowns ──────────────────────────────────────────────────
 //   useEffect(() => {
 //     const handleClickOutside = (event) => {
 //       if (
@@ -1624,8 +1749,31 @@ export default OrderSuccessPage;
 //     return () => document.removeEventListener("mousedown", handleClickOutside);
 //   }, []);
 
-//   // ─── Get batch allocations safely ──────────────────────────────────────
+//   // ─── Add Salesperson Handler ──────────────────────────────────────────
+//   const handleAddSalesperson = async () => {
+//     const trimmedName = newSalespersonName.trim();
+//     if (!trimmedName) {
+//       setSalespersonAddErrorMsg("Please enter a salesperson name.");
+//       return;
+//     }
 
+//     setSalespersonAddErrorMsg("");
+
+//     try {
+//       const result = await dispatch(addSalesperson(trimmedName)).unwrap();
+      
+//       setSelectedSP(result);
+//       setNewSalespersonName("");
+//       setAddSalespersonModalVisible(false);
+//       setDropdownOpen(false);
+      
+//       await dispatch(fetchSalespersons());
+//     } catch (err) {
+//       setSalespersonAddErrorMsg(err || "Failed to add salesperson. Please try again.");
+//     }
+//   };
+
+//   // ─── Get batch allocations ────────────────────────────────────────────
 //   const getBatchAllocationsForItem = useCallback(
 //     (item) => {
 //       let allocations = [];
@@ -1643,14 +1791,18 @@ export default OrderSuccessPage;
 //     [batchSelections],
 //   );
 
-//   // ─── goToInvoice - Stock reduced ONLY in backend ──────────────────────
-
+//   // ─── goToInvoice ──────────────────────────────────────────────────────
 //   const goToInvoice = async () => {
+//     if (!selectedSP) {
+//       alert("Please select a Salesperson before proceeding.");
+//       setConfirmVisible(false);
+//       return;
+//     }
+
 //     setIsConfirming(true);
 //     setConfirmVisible(false);
 
 //     try {
-//       // Build shipping info
 //       const finalShipToName = sameAsBuyer
 //         ? customer?.type === "shop"
 //           ? customer?.name
@@ -1665,10 +1817,8 @@ export default OrderSuccessPage;
 //         ? customer?.state || ""
 //         : shipToState;
 
-//       // Build items for invoice - FIXED: Handle no-batch products
 //       const invoiceItems = cartItems.map((item) => {
 //         const allocations = getBatchAllocationsForItem(item);
-//         // Check if the item has valid batch allocations (not 'default' string)
 //         const hasValidBatches = allocations && allocations.length > 0 && 
 //           allocations.some(a => a.batchNumber && a.batchNumber !== 'default');
 
@@ -1680,7 +1830,6 @@ export default OrderSuccessPage;
 //           useDefaultPrice: !hasValidBatches,
 //         };
 
-//         // Only add batchAllocations if there are valid batch numbers
 //         if (hasValidBatches) {
 //           baseItem.batchAllocations = allocations
 //             .filter(a => a.batchNumber && a.batchNumber !== 'default')
@@ -1695,7 +1844,6 @@ export default OrderSuccessPage;
 //         return baseItem;
 //       });
 
-//       // Calculate totals
 //       const subtotal = cartItems.reduce(
 //         (sum, item) =>
 //           sum + (item.price || item.originalPrice || 0) * (item.qty || 0),
@@ -1707,7 +1855,6 @@ export default OrderSuccessPage;
 //       const gst = parseFloat(gstAmount) || 0;
 //       const totalWithCourier = afterDiscount + courier + gst;
 
-//       // Prepare invoice payload
 //       const payload = {
 //         billerName: user?.name || "Unknown",
 //         items: invoiceItems,
@@ -1744,21 +1891,11 @@ export default OrderSuccessPage;
 //           invoiceItems.some((item) => item.useDefaultPrice),
 //       };
 
-//       console.log(
-//         "📤 Creating invoice (stock will be reduced in backend):",
-//         JSON.stringify(payload, null, 2),
-//       );
-
-//       // ✅ Send to backend - createInvoice handles stock reduction
 //       const invoiceRes = await API.post("/api/invoices", payload);
 //       const invoiceNumber = invoiceRes.data.invoice.invoiceNumber;
-//       console.log(`✅ Invoice ${invoiceNumber} created, stock reduced once`);
 
-//       // ✅ Refresh products after invoice to get updated stock
 //       await dispatch(fetchProducts());
-//       console.log("✅ Products refreshed with updated stock");
 
-//       // Navigate to invoice
 //       navigate("/invoice", {
 //         state: {
 //           invoiceNumber,
@@ -1810,8 +1947,12 @@ export default OrderSuccessPage;
 //   };
 
 //   // ─── Handlers ────────────────────────────────────────────────────────────
-
 //   const handleViewInvoice = () => {
+//     if (!selectedSP) {
+//       alert("Please select a Salesperson before proceeding.");
+//       return;
+//     }
+
 //     if (!referenceNo.trim()) {
 //       alert("Please enter a Reference Number before proceeding.");
 //       return;
@@ -2056,37 +2197,100 @@ export default OrderSuccessPage;
 //             </div>
 //           </div>
 
-//           {/* Salesperson */}
+//           {/* ─── Salesperson with "Add New" Button at Top ─── */}
 //           <div className="field-group" ref={salespersonDropdownRef}>
-//             <label>
-//               <User size={14} /> Salesperson
-//             </label>
+//             <div style={{
+//               display: "flex",
+//               justifyContent: "space-between",
+//               alignItems: "center",
+//               marginBottom: "4px",
+//             }}>
+//               <label style={{
+//                 display: "flex",
+//                 alignItems: "center",
+//                 gap: "0.5rem",
+//                 fontSize: "0.85rem",
+//                 fontWeight: 500,
+//                 color: "var(--text-secondary)",
+//                 margin: 0,
+//               }}>
+//                 <User size={14} /> Salesperson *
+//               </label>
+//               <button
+//                 type="button"
+//                 onClick={() => setAddSalespersonModalVisible(true)}
+//                 style={{
+//                   display: "flex",
+//                   alignItems: "center",
+//                   gap: "4px",
+//                   background: "var(--red)",
+//                   color: "#fff",
+//                   border: "none",
+//                   padding: "4px 12px",
+//                   borderRadius: "4px",
+//                   fontSize: "0.7rem",
+//                   fontWeight: 600,
+//                   cursor: "pointer",
+//                   transition: "all 0.2s",
+//                 }}
+//                 onMouseEnter={(e) => {
+//                   e.currentTarget.style.background = "var(--red-bright)";
+//                 }}
+//                 onMouseLeave={(e) => {
+//                   e.currentTarget.style.background = "var(--red)";
+//                 }}
+//               >
+//                 <Plus size={14} /> Add New
+//               </button>
+//             </div>
+
 //             <div
-//               className="custom-select"
-//               onClick={() => setDropdownOpen(!dropdownOpen)}
+//               className={`custom-select ${!selectedSP ? "error" : ""}`}
+//               onClick={() => !salespersonsLoading && setDropdownOpen(!dropdownOpen)}
+//               style={{
+//                 borderColor: !selectedSP ? "var(--red-bright)" : undefined,
+//                 cursor: salespersonsLoading ? "default" : "pointer",
+//               }}
 //             >
-//               <span>
-//                 {selectedSP ? selectedSP.name : "Select salesperson…"}
+//               <span style={{ 
+//                 color: !selectedSP ? "var(--text-muted)" : undefined 
+//               }}>
+//                 {salespersonsLoading ? (
+//                   <Loader size={16} className="spin" style={{ display: "inline-block", marginRight: "6px" }} />
+//                 ) : null}
+//                 {selectedSP ? selectedSP.name : "Select salesperson… (Required)"}
 //               </span>
 //               <ChevronDown
 //                 size={16}
 //                 className={`dropdown-arrow ${dropdownOpen ? "open" : ""}`}
 //               />
 //             </div>
-//             {dropdownOpen && (
-//               <div className="dropdown-list">
-//                 {SALESPERSONS.map((sp) => (
-//                   <div
-//                     key={sp.id}
-//                     className={`dropdown-item ${selectedSP?.id === sp.id ? "active" : ""}`}
-//                     onClick={() => {
-//                       setSelectedSP(sp);
-//                       setDropdownOpen(false);
-//                     }}
-//                   >
-//                     {sp.name}
+//             {!selectedSP && !salespersonsLoading && (
+//               <div className="error-text">Salesperson is required</div>
+//             )}
+//             {salespersonsLoading && (
+//               <div className="status-row">Loading salespersons...</div>
+//             )}
+//             {dropdownOpen && !salespersonsLoading && (
+//               <div className="dropdown-list" style={{ maxHeight: "200px", overflowY: "auto" }}>
+//                 {salespersons.length === 0 ? (
+//                   <div style={{ padding: "10px 14px", fontSize: "13px", color: "var(--text-muted)" }}>
+//                     No salespersons found. Click "Add New" to create one.
 //                   </div>
-//                 ))}
+//                 ) : (
+//                   salespersons.map((sp) => (
+//                     <div
+//                       key={sp.id}
+//                       className={`dropdown-item ${selectedSP?.id === sp.id ? "active" : ""}`}
+//                       onClick={() => {
+//                         setSelectedSP(sp);
+//                         setDropdownOpen(false);
+//                       }}
+//                     >
+//                       {sp.name}
+//                     </div>
+//                   ))
+//                 )}
 //               </div>
 //             )}
 //           </div>
@@ -2294,14 +2498,101 @@ export default OrderSuccessPage;
 //         <button
 //           className="primary-btn"
 //           onClick={handleViewInvoice}
-//           disabled={isConfirming || !referenceNo.trim() || !orderType}
+//           disabled={isConfirming || !referenceNo.trim() || !orderType || !selectedSP || salespersonsLoading}
 //           style={{
-//             opacity: !referenceNo.trim() || !orderType ? "0.5" : "1",
+//             opacity: !referenceNo.trim() || !orderType || !selectedSP || salespersonsLoading ? "0.5" : "1",
 //           }}
 //         >
 //           <FileText size={18} /> View Invoice
 //         </button>
 //       </div>
+
+//       {/* ─── Add Salesperson Modal ─── */}
+//       {addSalespersonModalVisible && (
+//         <div
+//           className="modal-overlay"
+//           onClick={() => {
+//             if (!addingSalesperson) {
+//               setAddSalespersonModalVisible(false);
+//               setSalespersonAddErrorMsg("");
+//             }
+//           }}
+//         >
+//           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+//             <div className="modal-header">
+//               <UserPlus size={18} /> Add New Salesperson
+//               <button
+//                 className="close-btn"
+//                 onClick={() => {
+//                   if (!addingSalesperson) {
+//                     setAddSalespersonModalVisible(false);
+//                     setSalespersonAddErrorMsg("");
+//                   }
+//                 }}
+//                 disabled={addingSalesperson}
+//               >
+//                 <X size={18} />
+//               </button>
+//             </div>
+//             <div className="modal-body">
+//               <div className="phone-pill" style={{ background: "var(--bg-surface)" }}>
+//                 <User size={13} /> New Salesperson
+//               </div>
+//               <input
+//                 type="text"
+//                 placeholder="Enter salesperson name *"
+//                 value={newSalespersonName}
+//                 onChange={(e) => {
+//                   setNewSalespersonName(e.target.value);
+//                   if (salespersonAddErrorMsg) setSalespersonAddErrorMsg("");
+//                 }}
+//                 className="modal-input"
+//                 onKeyDown={(e) => {
+//                   if (e.key === "Enter" && !addingSalesperson) {
+//                     handleAddSalesperson();
+//                   }
+//                 }}
+//                 autoFocus
+//                 disabled={addingSalesperson}
+//               />
+//               {salespersonAddErrorMsg && (
+//                 <div style={{ 
+//                   fontSize: "0.75rem", 
+//                   color: "var(--red-bright)", 
+//                   marginBottom: "0.75rem",
+//                   fontWeight: 500,
+//                 }}>
+//                   ⚠️ {salespersonAddErrorMsg}
+//                 </div>
+//               )}
+//               <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+//                 This will add the salesperson to the database for all future invoices.
+//               </div>
+//               <button
+//                 className="save-btn"
+//                 onClick={handleAddSalesperson}
+//                 disabled={addingSalesperson}
+//                 style={{
+//                   display: "flex",
+//                   alignItems: "center",
+//                   justifyContent: "center",
+//                   gap: "6px",
+//                 }}
+//               >
+//                 {addingSalesperson ? (
+//                   <>
+//                     <Loader size={16} className="spin" /> Adding...
+//                   </>
+//                 ) : (
+//                   <>
+//                     <Plus size={16} /> Add Salesperson
+//                   </>
+//                 )}
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
 
 //       {/* Add Customer Modal */}
 //       {addModalVisible && (
@@ -2511,7 +2802,6 @@ export default OrderSuccessPage;
 //             <div className="modal-body">
 //               <p>Please confirm the order details before proceeding.</p>
 
-//               {/* Confirm modal batch summary */}
 //               {showBatchSelector && (
 //                 <div className="confirm-batch-summary">
 //                   <h4>Batch Allocations</h4>
@@ -2552,6 +2842,10 @@ export default OrderSuccessPage;
 //                   <strong>Order Type:</strong> <span>{orderType || "—"}</span>
 //                 </div>
 //                 <div>
+//                   <strong>Salesperson:</strong>{" "}
+//                   <span>{selectedSP?.name || "—"}</span>
+//                 </div>
+//                 <div>
 //                   <strong>Buyer:</strong>
 //                   <span>
 //                     {customer?.type === "shop"
@@ -2575,10 +2869,6 @@ export default OrderSuccessPage;
 //                   </span>
 //                 </div>
 //                 <div>
-//                   <strong>Salesperson:</strong>{" "}
-//                   <span>{selectedSP?.name || "—"}</span>
-//                 </div>
-//                 <div>
 //                   <strong>Courier:</strong> <span>₹{courier}</span>
 //                 </div>
 //                 {discountAmount > 0 && (
@@ -2600,7 +2890,7 @@ export default OrderSuccessPage;
 //                 <button
 //                   className="primary-btn"
 //                   onClick={goToInvoice}
-//                   disabled={isConfirming || !referenceNo.trim() || !orderType}
+//                   disabled={isConfirming || !referenceNo.trim() || !orderType || !selectedSP}
 //                 >
 //                   {isConfirming
 //                     ? "Processing..."

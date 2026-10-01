@@ -237,6 +237,7 @@ const InvoicePage = () => {
     };
   }, []);
 
+  // ─── FIXED: courierCharge default is 0, not 80 ───────────────────────
   const {
     invoiceNumber,
     items = [],
@@ -248,7 +249,7 @@ const InvoicePage = () => {
     buyerAddress = "—",
     buyerCity = "",
     buyerState = "",
-    courierCharge = 80,
+    courierCharge = 0,     // ← was 80
     discount = 0,
     gstAmount = 0,
     salesperson = "",
@@ -259,17 +260,22 @@ const InvoicePage = () => {
     priceType = "retailerPrice",
   } = location.state || {};
 
+  // ─── Safe numeric conversions (0 is preserved) ───────────────────────
+  const courierChargeNum = Number(courierCharge) || 0;
+  const gstAmountNum = Number(gstAmount) || 0;
+  const discountNum = Number(discount) || 0;
+
   const componentRef = useRef();
   const [saveMessage, setSaveMessage] = useState("");
 
-  // Calculate totals from items - use actual item prices
   const subtotalFromItems = items.reduce(
-    (sum, item) => sum + (item.price || 0) * item.qty,
+    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.qty) || 0),
     0,
   );
-  const discountedSubtotal = subtotalFromItems - discount;
-  const grandTotal = discountedSubtotal + courierCharge + gstAmount;
-  const totalQty = items.reduce((s, i) => s + i.qty, 0);
+  const discountedSubtotal = subtotalFromItems - discountNum;
+  const grandTotal =
+    discountedSubtotal + courierChargeNum + gstAmountNum;
+  const totalQty = items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
 
   const buyerLine3 = [buyerCity, buyerState].filter(Boolean).join(" - ");
   const grandTotalWords = `INR ${amountInWords(Math.round(grandTotal))} Only`;
@@ -784,11 +790,11 @@ const InvoicePage = () => {
                   </td>
                   <td style={tdStyle(idx)}>NOS</td>
                   <td style={{ ...tdStyle(idx), textAlign: "right" }}>
-                    ₹{(item.qty * item.price).toFixed(2)}
+                    ₹{((Number(item.qty) || 0) * (Number(item.price) || 0)).toFixed(2)}
                   </td>
                 </tr>
               ))}
-              {discount > 0 && (
+              {discountNum > 0 && (
                 <tr>
                   <td style={tdStyle(items.length)}></td>
                   <td style={tdStyle(items.length)}>DISCOUNT</td>
@@ -797,59 +803,60 @@ const InvoicePage = () => {
                   <td style={tdStyle(items.length)}></td>
                   <td style={tdStyle(items.length)}></td>
                   <td style={{ ...tdStyle(items.length), textAlign: "right" }}>
-                    -₹{discount}.00
+                    -₹{discountNum.toFixed(2)}
                   </td>
                 </tr>
               )}
-              {gstAmount > 0 && (
+              {gstAmountNum > 0 && (
                 <tr>
                   <td
-                    style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+                    style={tdStyle(items.length + (discountNum > 0 ? 1 : 0) + 1)}
                   ></td>
                   <td
-                    style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+                    style={tdStyle(items.length + (discountNum > 0 ? 1 : 0) + 1)}
                   >
                     GST
                   </td>
                   <td
-                    style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+                    style={tdStyle(items.length + (discountNum > 0 ? 1 : 0) + 1)}
                   ></td>
                   <td
-                    style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+                    style={tdStyle(items.length + (discountNum > 0 ? 1 : 0) + 1)}
                   ></td>
                   <td
-                    style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+                    style={tdStyle(items.length + (discountNum > 0 ? 1 : 0) + 1)}
                   ></td>
                   <td
-                    style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+                    style={tdStyle(items.length + (discountNum > 0 ? 1 : 0) + 1)}
                   ></td>
                   <td
                     style={{
-                      ...tdStyle(items.length + (discount > 0 ? 1 : 0) + 1),
+                      ...tdStyle(items.length + (discountNum > 0 ? 1 : 0) + 1),
                       textAlign: "right",
                     }}
                   >
-                    ₹{gstAmount}.00
+                    ₹{gstAmountNum.toFixed(2)}
                   </td>
                 </tr>
               )}
 
+              {/* COURIER CHARGE row — always shown, even when 0 */}
               <tr>
-                <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
-                <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}>
+                <td style={tdStyle(items.length + (discountNum > 0 ? 1 : 0))}></td>
+                <td style={tdStyle(items.length + (discountNum > 0 ? 1 : 0))}>
                   COURIER CHARGE
                 </td>
-                <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
-                <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
-                <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
-                <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
+                <td style={tdStyle(items.length + (discountNum > 0 ? 1 : 0))}></td>
+                <td style={tdStyle(items.length + (discountNum > 0 ? 1 : 0))}></td>
+                <td style={tdStyle(items.length + (discountNum > 0 ? 1 : 0))}></td>
+                <td style={tdStyle(items.length + (discountNum > 0 ? 1 : 0))}></td>
                 <td
                   style={{
-                    ...tdStyle(items.length + (discount > 0 ? 1 : 0)),
+                    ...tdStyle(items.length + (discountNum > 0 ? 1 : 0)),
                     textAlign: "right",
                   }}
                 >
-                  ₹{courierCharge}.00
+                  ₹{courierChargeNum.toFixed(2)}
                 </td>
               </tr>
 
@@ -962,7 +969,7 @@ const InvoicePage = () => {
 
 export default InvoicePage;
 
-//-------------- 14.08.2026 -------------------------------
+//--------------- 01.10.2026 -------------------------------
 // // src/pages/Invoice/InvoicePage.js
 // import React, { useRef, useState, useEffect } from "react";
 // import { useLocation, useNavigate } from "react-router-dom";
@@ -1094,16 +1101,24 @@ export default InvoicePage;
 //   );
 // };
 
-// const DisplayBuyerInfo = ({ name, phone, address, city, state, customerType, shopName }) => {
+// const DisplayBuyerInfo = ({
+//   name,
+//   phone,
+//   address,
+//   city,
+//   state,
+//   customerType,
+//   shopName,
+// }) => {
 //   let customerDisplayName = name;
 //   let shopDisplayName = null;
 
-//   if (name && name.includes('(') && name.includes(')')) {
+//   if (name && name.includes("(") && name.includes(")")) {
 //     const customerMatch = name.match(/^([^(]+?)\s*\(/);
 //     const shopMatch = name.match(/\(([^)]+)\)/);
 //     customerDisplayName = customerMatch ? customerMatch[1].trim() : name;
 //     shopDisplayName = shopMatch ? shopMatch[1].trim() : null;
-//   } else if (customerType === 'shop' && shopName) {
+//   } else if (customerType === "shop" && shopName) {
 //     customerDisplayName = name;
 //     shopDisplayName = shopName;
 //   }
@@ -1111,27 +1126,42 @@ export default InvoicePage;
 //   return (
 //     <div style={{ ...S.text, margin: 0, padding: 0 }}>
 //       {customerDisplayName && customerDisplayName !== "—" && (
-//         <div style={{ margin: "2px 0", fontSize: "0.78rem", fontWeight: "600", lineHeight: "1.4" }}>
+//         <div
+//           style={{
+//             margin: "2px 0",
+//             fontSize: "0.78rem",
+//             fontWeight: "600",
+//             lineHeight: "1.4",
+//           }}
+//         >
 //           {customerDisplayName}
 //         </div>
 //       )}
 //       {shopDisplayName && (
-//         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
+//         <div
+//           style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}
+//         >
 //           {shopDisplayName}
 //         </div>
 //       )}
 //       {phone && phone !== "—" && (
-//         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
+//         <div
+//           style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}
+//         >
 //           {phone}
 //         </div>
 //       )}
 //       {address && address !== "—" && (
-//         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
+//         <div
+//           style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}
+//         >
 //           {address}
 //         </div>
 //       )}
-//       {(city && city !== "—" || state && state !== "—") && (
-//         <div style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}>
+//       {((city && city !== "—") || (state && state !== "—")) && (
+//         <div
+//           style={{ margin: "2px 0", fontSize: "0.78rem", lineHeight: "1.4" }}
+//         >
 //           {[city, state].filter(Boolean).join(" - ")}
 //         </div>
 //       )}
@@ -1162,7 +1192,9 @@ export default InvoicePage;
 //           }
 //         };
 //         reader.onerror = () => {
-//           console.warn("Logo base64 conversion failed, falling back to file path");
+//           console.warn(
+//             "Logo base64 conversion failed, falling back to file path",
+//           );
 //           if (!cancelled) setLogoReady(true);
 //         };
 //         reader.readAsDataURL(blob);
@@ -1190,6 +1222,7 @@ export default InvoicePage;
 //     buyerState = "",
 //     courierCharge = 80,
 //     discount = 0,
+//     gstAmount = 0,
 //     salesperson = "",
 //     referenceNo = "",
 //     customerType = "",
@@ -1202,9 +1235,12 @@ export default InvoicePage;
 //   const [saveMessage, setSaveMessage] = useState("");
 
 //   // Calculate totals from items - use actual item prices
-//   const subtotalFromItems = items.reduce((sum, item) => sum + (item.price || 0) * item.qty, 0);
+//   const subtotalFromItems = items.reduce(
+//     (sum, item) => sum + (item.price || 0) * item.qty,
+//     0,
+//   );
 //   const discountedSubtotal = subtotalFromItems - discount;
-//   const grandTotal = discountedSubtotal + courierCharge;
+//   const grandTotal = discountedSubtotal + courierCharge + gstAmount;
 //   const totalQty = items.reduce((s, i) => s + i.qty, 0);
 
 //   const buyerLine3 = [buyerCity, buyerState].filter(Boolean).join(" - ");
@@ -1471,10 +1507,18 @@ export default InvoicePage;
 //           ← Back
 //         </button>
 //         <div className="action-btn-group">
-//           <button onClick={handlePrint} className="print-btn" disabled={!logoReady}>
+//           <button
+//             onClick={handlePrint}
+//             className="print-btn"
+//             disabled={!logoReady}
+//           >
 //             <Printer size={16} /> {logoReady ? "Print" : "Preparing..."}
 //           </button>
-//           <button onClick={handleSavePDF} className="save-btn" disabled={!logoReady}>
+//           <button
+//             onClick={handleSavePDF}
+//             className="save-btn"
+//             disabled={!logoReady}
+//           >
 //             <FileText size={16} /> {logoReady ? "Save PDF" : "Preparing..."}
 //           </button>
 //         </div>
@@ -1499,13 +1543,15 @@ export default InvoicePage;
 //               ...S.wrap,
 //             }}
 //           >
-//             <div style={{
-//               width: "110px",
-//               display: "flex",
-//               alignItems: "center",
-//               justifyContent: "flex-start",
-//               flexShrink: 0
-//             }}>
+//             <div
+//               style={{
+//                 width: "110px",
+//                 display: "flex",
+//                 alignItems: "center",
+//                 justifyContent: "flex-start",
+//                 flexShrink: 0,
+//               }}
+//             >
 //               <img
 //                 src={logoSrc}
 //                 alt="RADNUS"
@@ -1518,35 +1564,41 @@ export default InvoicePage;
 //                   objectFit: "contain",
 //                 }}
 //                 onError={(e) => {
-//                   console.warn('Logo load error, showing text fallback');
+//                   console.warn("Logo load error, showing text fallback");
 //                   e.target.style.display = "none";
 //                   const parent = e.target.parentNode;
 //                   const fallback = document.createElement("span");
 //                   fallback.textContent = "RADNUS";
-//                   fallback.style.cssText = "font-weight:700;font-size:18px;color:#000;";
+//                   fallback.style.cssText =
+//                     "font-weight:700;font-size:18px;color:#000;";
 //                   parent.appendChild(fallback);
 //                 }}
 //               />
 //             </div>
 
-//             <div style={{
-//               textAlign: "center",
-//               flex: 1,
-//               padding: "0 0.5rem"
-//             }}>
-//               <div style={{
-//                 ...S.text,
-//                 fontSize: "1.1rem",
-//                 fontWeight: "700",
-//                 letterSpacing: "0.5px"
-//               }}>
+//             <div
+//               style={{
+//                 textAlign: "center",
+//                 flex: 1,
+//                 padding: "0 0.5rem",
+//               }}
+//             >
+//               <div
+//                 style={{
+//                   ...S.text,
+//                   fontSize: "1.1rem",
+//                   fontWeight: "700",
+//                   letterSpacing: "0.5px",
+//                 }}
+//               >
 //                 RADNUS COMMUNICATION
 //               </div>
 //               <div style={{ ...S.text, fontSize: "0.7rem", marginTop: "2px" }}>
 //                 No.242/244, MG Road, Sinnaya Plaza, Near KFC Chicken
 //               </div>
 //               <div style={{ ...S.text, fontSize: "0.7rem" }}>
-//                 Puducherry - 605001 &nbsp;|&nbsp; State Name: Puducherry, Code: 605001
+//                 Puducherry - 605001 &nbsp;|&nbsp; State Name: Puducherry, Code:
+//                 605001
 //               </div>
 //               <div style={{ ...S.text, fontSize: "0.7rem" }}>
 //                 E-Mail: sundar12134@gmail.com
@@ -1655,7 +1707,7 @@ export default InvoicePage;
 //                         }}
 //                       >
 //                         {label}
-//                        </td>
+//                       </td>
 //                       <td style={S.metaTd}>{value}</td>
 //                     </tr>
 //                   ))}
@@ -1675,13 +1727,19 @@ export default InvoicePage;
 //           >
 //             <thead>
 //               <tr>
-//                 {["SL NO.", "DESCRIPTION", "HSN", "QTY", "RATE", "PER", "AMOUNT"].map(
-//                   (h) => (
-//                     <th key={h} style={S.th}>
-//                       {h}
-//                     </th>
-//                   )
-//                 )}
+//                 {[
+//                   "SL NO.",
+//                   "DESCRIPTION",
+//                   "HSN",
+//                   "QTY",
+//                   "RATE",
+//                   "PER",
+//                   "AMOUNT",
+//                 ].map((h) => (
+//                   <th key={h} style={S.th}>
+//                     {h}
+//                   </th>
+//                 ))}
 //               </tr>
 //             </thead>
 //             <tbody>
@@ -1690,8 +1748,12 @@ export default InvoicePage;
 //                   <td style={tdStyle(idx)}>{idx + 1}</td>
 //                   <td style={tdStyle(idx)}>{item.name}</td>
 //                   <td style={tdStyle(idx)}>-</td>
-//                   <td style={{ ...tdStyle(idx), textAlign: "center" }}>{item.qty} NOS</td>
-//                   <td style={{ ...tdStyle(idx), textAlign: "right" }}>₹{item.price}</td>
+//                   <td style={{ ...tdStyle(idx), textAlign: "center" }}>
+//                     {item.qty} NOS
+//                   </td>
+//                   <td style={{ ...tdStyle(idx), textAlign: "right" }}>
+//                     ₹{item.price}
+//                   </td>
 //                   <td style={tdStyle(idx)}>NOS</td>
 //                   <td style={{ ...tdStyle(idx), textAlign: "right" }}>
 //                     ₹{(item.qty * item.price).toFixed(2)}
@@ -1706,9 +1768,44 @@ export default InvoicePage;
 //                   <td style={tdStyle(items.length)}></td>
 //                   <td style={tdStyle(items.length)}></td>
 //                   <td style={tdStyle(items.length)}></td>
-//                   <td style={{ ...tdStyle(items.length), textAlign: "right" }}>-₹{discount}.00</td>
+//                   <td style={{ ...tdStyle(items.length), textAlign: "right" }}>
+//                     -₹{discount}.00
+//                   </td>
 //                 </tr>
 //               )}
+//               {gstAmount > 0 && (
+//                 <tr>
+//                   <td
+//                     style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+//                   ></td>
+//                   <td
+//                     style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+//                   >
+//                     GST
+//                   </td>
+//                   <td
+//                     style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+//                   ></td>
+//                   <td
+//                     style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+//                   ></td>
+//                   <td
+//                     style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+//                   ></td>
+//                   <td
+//                     style={tdStyle(items.length + (discount > 0 ? 1 : 0) + 1)}
+//                   ></td>
+//                   <td
+//                     style={{
+//                       ...tdStyle(items.length + (discount > 0 ? 1 : 0) + 1),
+//                       textAlign: "right",
+//                     }}
+//                   >
+//                     ₹{gstAmount}.00
+//                   </td>
+//                 </tr>
+//               )}
+
 //               <tr>
 //                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
 //                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}>
@@ -1718,21 +1815,39 @@ export default InvoicePage;
 //                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
 //                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
 //                 <td style={tdStyle(items.length + (discount > 0 ? 1 : 0))}></td>
-//                 <td style={{ ...tdStyle(items.length + (discount > 0 ? 1 : 0)), textAlign: "right" }}>
+//                 <td
+//                   style={{
+//                     ...tdStyle(items.length + (discount > 0 ? 1 : 0)),
+//                     textAlign: "right",
+//                   }}
+//                 >
 //                   ₹{courierCharge}.00
 //                 </td>
 //               </tr>
+
 //               {/* Total row */}
 //               <tr>
 //                 <td style={S.tdTotal}></td>
 //                 <td style={{ ...S.tdTotal, fontWeight: "700" }}>TOTAL</td>
 //                 <td style={S.tdTotal}></td>
-//                 <td style={{ ...S.tdTotal, fontWeight: "700", textAlign: "center" }}>
+//                 <td
+//                   style={{
+//                     ...S.tdTotal,
+//                     fontWeight: "700",
+//                     textAlign: "center",
+//                   }}
+//                 >
 //                   {totalQty} NOS
 //                 </td>
 //                 <td style={S.tdTotal}></td>
 //                 <td style={S.tdTotal}></td>
-//                 <td style={{ ...S.tdTotal, fontWeight: "700", textAlign: "right" }}>
+//                 <td
+//                   style={{
+//                     ...S.tdTotal,
+//                     fontWeight: "700",
+//                     textAlign: "right",
+//                   }}
+//                 >
 //                   ₹{grandTotal.toFixed(2)}
 //                 </td>
 //               </tr>
@@ -1752,7 +1867,9 @@ export default InvoicePage;
 //             <div>
 //               <strong style={S.text}>Amount Chargeable (in words)</strong>
 //               <br />
-//               <span style={{ ...S.text, fontSize: "0.8rem" }}>{grandTotalWords}</span>
+//               <span style={{ ...S.text, fontSize: "0.8rem" }}>
+//                 {grandTotalWords}
+//               </span>
 //             </div>
 //           </div>
 
@@ -1792,7 +1909,9 @@ export default InvoicePage;
 //                   width: "100%",
 //                 }}
 //               ></div>
-//               <span style={{ ...S.text, fontSize: "0.7rem" }}>Authorised Signatory</span>
+//               <span style={{ ...S.text, fontSize: "0.7rem" }}>
+//                 Authorised Signatory
+//               </span>
 //             </div>
 //           </div>
 

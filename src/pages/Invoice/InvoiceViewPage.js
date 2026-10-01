@@ -23,10 +23,6 @@ const InvoiceViewPage = () => {
   const [downloading, setDownloading] = useState(false);
 
   // ===== LOGO FIX: convert imported logo to a base64 data URI =====
-  // A plain file path/blob URL can fail to resolve inside the popup print
-  // window or during html2pdf's html2canvas capture. Baking the logo into
-  // a base64 data URI removes that external dependency entirely, so it
-  // always renders correctly regardless of context.
   const [logoBase64, setLogoBase64] = useState(null);
   const [logoReady, setLogoReady] = useState(false);
 
@@ -93,12 +89,25 @@ const InvoiceViewPage = () => {
     orderType = '',
   } = invoice;
 
+  // ─── SAFE NUMERIC CONVERSIONS (0 preserved) ──────────────────────────
+  const discountNum = Number(discount) || 0;
+  const gstAmountNum = Number(gstAmount) || 0;
+  const courierChargeNum = Number(courierCharge) || 0;
+
   // Ensure items maintain their original order
   const orderedItems = [...items];
 
+  // Compute subtotal — prefer stored value, fallback to sum of items
+  const computedSubtotal = orderedItems.reduce(
+    (sum, i) => sum + (Number(i.qty) || 0) * (Number(i.price) || 0),
+    0,
+  );
   const subtotal =
-    storeSubtotal || orderedItems.reduce((sum, i) => sum + i.qty * i.price, 0);
-  const grandTotal = totalAmount;
+    storeSubtotal !== undefined && storeSubtotal !== null
+      ? Number(storeSubtotal) || computedSubtotal
+      : computedSubtotal;
+
+  const grandTotal = Number(totalAmount) || 0;
 
   // Helper function to get display name (customer name only)
   const getDisplayName = () => {
@@ -243,7 +252,7 @@ const InvoiceViewPage = () => {
     // Items rows - preserving order exactly as in the array with proper table structure
     let itemsRows = "";
     orderedItems.forEach((item, idx) => {
-      const amount = item.qty * item.price;
+      const amount = (Number(item.qty) || 0) * (Number(item.price) || 0);
       itemsRows += `
         <tr>
           <td style="text-align:center;padding:8px;border:1px solid #000;">${idx + 1}</td>
@@ -257,8 +266,9 @@ const InvoiceViewPage = () => {
       `;
     });
 
+    // Discount row — only render when > 0
     const discountRow =
-      discount > 0
+      discountNum > 0
         ? `
       <tr>
         <td style="border:1px solid #000;padding:8px;"></td>
@@ -267,12 +277,13 @@ const InvoiceViewPage = () => {
         <td style="border:1px solid #000;padding:8px;"></td>
         <td style="border:1px solid #000;padding:8px;"></td>
         <td style="border:1px solid #000;padding:8px;"></td>
-        <td style="border:1px solid #000;padding:8px;text-align:right;">-₹${discount}.00</td>
+        <td style="border:1px solid #000;padding:8px;text-align:right;">-₹${discountNum.toFixed(2)}</td>
       </tr>`
         : "";
 
+    // GST row — only render when > 0
     const gstRow =
-      gstAmount > 0
+      gstAmountNum > 0
         ? `
       <tr>
         <td style="border:1px solid #000;padding:8px;"></td>
@@ -281,14 +292,16 @@ const InvoiceViewPage = () => {
         <td style="border:1px solid #000;padding:8px;"></td>
         <td style="border:1px solid #000;padding:8px;"></td>
         <td style="border:1px solid #000;padding:8px;"></td>
-        <td style="border:1px solid #000;padding:8px;text-align:right;">₹${gstAmount}.00</td>
+        <td style="border:1px solid #000;padding:8px;text-align:right;">₹${gstAmountNum.toFixed(2)}</td>
       </tr>`
         : "";
 
-    const totalQty = orderedItems.reduce((sum, i) => sum + i.qty, 0);
+    const totalQty = orderedItems.reduce(
+      (sum, i) => sum + (Number(i.qty) || 0),
+      0,
+    );
 
     // Use the base64 logo (guaranteed to render in the print window / PDF).
-    // Falls back to the raw import path only if base64 conversion failed.
     const logoSrcForHtml = logoBase64 || radnusLogo;
 
     const logoImg = `<img 
@@ -479,7 +492,7 @@ const InvoiceViewPage = () => {
                 <td></td>
                 <td></td>
                 <td></td>
-                <td style="text-align:right;">₹${courierCharge}.00</td>
+                <td style="text-align:right;">₹${courierChargeNum.toFixed(2)}</td>
               </tr>
               <tr>
                 <td style="background:#e8e8e8; font-weight:700; border-top:2px solid #000;"></td>
@@ -671,7 +684,12 @@ const InvoiceViewPage = () => {
                   <td>{item.name}</td>
                   <td>{item.qty}</td>
                   <td>₹{item.price}</td>
-                  <td>₹{(item.qty * item.price).toFixed(2)}</td>
+                  <td>
+                    ₹
+                    {(
+                      (Number(item.qty) || 0) * (Number(item.price) || 0)
+                    ).toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -684,21 +702,21 @@ const InvoiceViewPage = () => {
             <span>Subtotal</span>
             <span>₹{subtotal.toFixed(2)}</span>
           </div>
-          {discount > 0 && (
+          {discountNum > 0 && (
             <div className="summary-row">
               <span>Discount</span>
-              <span>- ₹{discount.toFixed(2)}</span>
+              <span>- ₹{discountNum.toFixed(2)}</span>
             </div>
           )}
-          {gstAmount > 0 && (
+          {gstAmountNum > 0 && (
             <div className="summary-row">
               <span>GST</span>
-              <span>₹{gstAmount.toFixed(2)}</span>
+              <span>₹{gstAmountNum.toFixed(2)}</span>
             </div>
           )}
           <div className="summary-row">
             <span>Courier Charge</span>
-            <span>₹{courierCharge.toFixed(2)}</span>
+            <span>₹{courierChargeNum.toFixed(2)}</span>
           </div>
 
           <div className="summary-row total">
@@ -714,7 +732,11 @@ const InvoiceViewPage = () => {
             disabled={downloading || !logoReady}
           >
             <Printer size={18} />{" "}
-            {downloading ? "Preparing..." : logoReady ? "Print Invoice" : "Loading logo..."}
+            {downloading
+              ? "Preparing..."
+              : logoReady
+                ? "Print Invoice"
+                : "Loading logo..."}
           </button>
           <button
             className="download-btn"
@@ -722,7 +744,11 @@ const InvoiceViewPage = () => {
             disabled={downloading || !logoReady}
           >
             <Download size={18} />{" "}
-            {downloading ? "Preparing..." : logoReady ? "Download PDF" : "Loading logo..."}
+            {downloading
+              ? "Preparing..."
+              : logoReady
+                ? "Download PDF"
+                : "Loading logo..."}
           </button>
         </div>
       </div>
@@ -732,7 +758,7 @@ const InvoiceViewPage = () => {
 
 export default InvoiceViewPage;
 
-//-------------------- 14-08-2026 -----------------------
+//----------------- 01.10.2026 ---------------
 // // src/pages/Invoices/InvoiceViewPage.js
 // import React, { useState, useEffect } from "react";
 // import { useLocation, useNavigate } from "react-router-dom";
@@ -820,6 +846,7 @@ export default InvoiceViewPage;
 //     paymentMode,
 //     subtotal: storeSubtotal,
 //     discount = 0,
+//     gstAmount = 0,
 //     courierCharge = 0,
 //     billerName,
 //     salesperson = "",
@@ -1002,6 +1029,20 @@ export default InvoiceViewPage;
 //         <td style="border:1px solid #000;padding:8px;"></td>
 //         <td style="border:1px solid #000;padding:8px;"></td>
 //         <td style="border:1px solid #000;padding:8px;text-align:right;">-₹${discount}.00</td>
+//       </tr>`
+//         : "";
+
+//     const gstRow =
+//       gstAmount > 0
+//         ? `
+//       <tr>
+//         <td style="border:1px solid #000;padding:8px;"></td>
+//         <td style="border:1px solid #000;padding:8px;">GST</td>
+//         <td style="border:1px solid #000;padding:8px;"></td>
+//         <td style="border:1px solid #000;padding:8px;"></td>
+//         <td style="border:1px solid #000;padding:8px;"></td>
+//         <td style="border:1px solid #000;padding:8px;"></td>
+//         <td style="border:1px solid #000;padding:8px;text-align:right;">₹${gstAmount}.00</td>
 //       </tr>`
 //         : "";
 
@@ -1191,6 +1232,7 @@ export default InvoiceViewPage;
 //             <tbody>
 //               ${itemsRows}
 //               ${discountRow}
+//               ${gstRow}
 //               <tr>
 //                 <td></td>
 //                 <td>COURIER CHARGE</td>
@@ -1409,10 +1451,17 @@ export default InvoiceViewPage;
 //               <span>- ₹{discount.toFixed(2)}</span>
 //             </div>
 //           )}
+//           {gstAmount > 0 && (
+//             <div className="summary-row">
+//               <span>GST</span>
+//               <span>₹{gstAmount.toFixed(2)}</span>
+//             </div>
+//           )}
 //           <div className="summary-row">
 //             <span>Courier Charge</span>
 //             <span>₹{courierCharge.toFixed(2)}</span>
 //           </div>
+
 //           <div className="summary-row total">
 //             <span>Grand Total</span>
 //             <span>₹{grandTotal.toFixed(2)}</span>
@@ -1443,4 +1492,3 @@ export default InvoiceViewPage;
 // };
 
 // export default InvoiceViewPage;
-
